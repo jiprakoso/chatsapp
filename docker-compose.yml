@@ -1,0 +1,24 @@
+services:
+  php:
+    image: ci4-php82-fpm:8.2
+    container_name: adms-local-php
+    network_mode: host
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php-fpm-pool.conf:/usr/local/etc/php-fpm.d/zz-pool.conf:ro
+      - ./docker/run:/var/run/php
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: adms-local-nginx
+    depends_on:
+      - php
+    ports:
+      - "8090:80"
+    volumes:
+      - ./public:/var/www/html/public:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/run:/var/run/php
+    restart: unless-stopped
