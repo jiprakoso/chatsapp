@@ -66,7 +66,8 @@ class AuthorizationService
     {
         $rows = Database::connect()
             ->table('user_roles ur')
-            ->select('DISTINCT p.name')
+            ->distinct()
+            ->select('p.name')
             ->join('role_permissions rp', 'rp.role_id = ur.role_id')
             ->join('permissions p', 'p.id = rp.permission_id')
             ->where('ur.user_id', $userId)

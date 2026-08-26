@@ -190,8 +190,6 @@ GET seluruh history lagi
 
 # 3. Struktur Data
 
-Diasumsikan tabel `users` sudah tersedia.
-
 Minimal struktur:
 
 ```text
@@ -210,7 +208,33 @@ users
 users
     |
     +--- user_devices
+    |
+    +--- user_roles          (lihat Section 28, RBAC)
 ```
+
+## 3.1 Table users
+
+```sql
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(150) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+
+    photo VARCHAR(255) NULL,
+
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME NULL,
+
+    UNIQUE KEY (username),
+    UNIQUE KEY (email)
+);
+```
+
+`username` dan `email` sama-sama unik dan sama-sama bisa dipakai untuk login (lihat `UserModel::findByLogin()`).
 
 ---
 
@@ -1267,7 +1291,7 @@ permissions.manage
 system.settings
 ```
 
-Contoh seed default:
+Seed default (sudah diimplementasikan di `app/Database/Seeds/RolePermissionSeeder.php`, idempotent — aman dijalankan berulang):
 
 ```text
 role: super_admin  -> seluruh permission
@@ -1307,6 +1331,31 @@ $routes->group('admin', ['filter' => 'jwtauth'], static function ($routes) {
 
 `PermissionFilter` menerima argument nama permission, mengambil role & permission user yang sedang login (dari JWT/session), lalu mencocokkan.
 
+Route dengan filter ganda menggunakan bentuk array:
+
+```php
+$routes->get('api/admin/users/(:num)/ban', 'Api\Admin\UserController::ban/$1', [
+    'filter' => ['jwtauth', 'permission:users.ban'],
+]);
+```
+
+### Implementasi JWT
+
+Tidak ada akses composer/internet saat implementasi, sehingga JWT (HS256) dibuat self-contained di `App\Libraries\Jwt` (encode/decode pakai `hash_hmac('sha256', ...)` + `hash_equals`), bukan lewat library seperti `firebase/php-jwt`. Jika suatu saat composer punya akses jaringan, ini bisa diganti tanpa mengubah kontrak `JwtAuthFilter`.
+
+Secret JWT disimpan di `.env` (`JWT_SECRET`) dan dibaca lewat `Config\Jwt`.
+
+Identitas user hasil decode token disimpan di service `currentUser` (`App\Libraries\CurrentUser`, didaftarkan di `Config\Services::currentUser()`) selama request berlangsung:
+
+```php
+// di JwtAuthFilter, setelah token valid
+service('currentUser')->setId((int) $payload['sub']);
+
+// dibaca di PermissionFilter / Controller
+service('currentUser')->id();
+service('currentUser')->isAuthenticated();
+```
+
 ## 28.4 Struktur Tambahan CI4
 
 ```text
@@ -1315,9 +1364,17 @@ app/
 │   ├── JwtAuthFilter.php
 │   └── PermissionFilter.php
 │
+├── Libraries/
+│   ├── Jwt.php              (encode/decode HS256, self-contained)
+│   └── CurrentUser.php      (holder user_id per request)
+│
+├── Config/
+│   └── Jwt.php              (baca JWT_SECRET dari .env)
+│
 ├── Models/
 │   ├── RoleModel.php
 │   ├── PermissionModel.php
+│   ├── RolePermissionModel.php
 │   └── UserRoleModel.php
 │
 ├── Services/
@@ -1330,6 +1387,8 @@ app/
             ├── PermissionController.php
             └── UserController.php
 ```
+
+`RoleModel`/`PermissionModel` punya primary key biasa (`id`). `RolePermissionModel`/`UserRoleModel` adalah pivot table dengan composite primary key, sehingga tidak memakai `find()`/`update()` bawaan CI4 Model — operasinya lewat method custom (`grant()`, `revoke()`, `syncForRole()`, `assign()`, `roleIdsForUser()`, dst).
 
 `AuthorizationService` bertanggung jawab mengambil dan menggabungkan seluruh permission milik seorang user (dari semua role yang dimiliki), lalu menyediakan helper seperti:
 
@@ -1363,6 +1422,17 @@ Cache di-invalidate ketika:
 - permission suatu role berubah (`role_permissions` insert/delete)
 
 Gunakan TTL pendek sebagai fallback (misal 5-10 menit) jika invalidation berbasis event belum diimplementasikan.
+
+### Implementasi
+
+`AuthorizationService` memakai CI4 cache service bawaan (`service('cache')`, handler default `file`, lihat `Config\Cache`), dengan key `user_permissions_{user_id}` dan TTL fallback 300 detik.
+
+```php
+$authorizationService->invalidateUserCache($userId);   // panggil setelah user_roles berubah
+$authorizationService->invalidateRoleCache($roleId);   // panggil setelah role_permissions berubah, invalidate semua user pemegang role tsb
+```
+
+Sudah diverifikasi end-to-end: mengubah `role_permissions` langsung di database belum berefek ke user sampai `invalidateRoleCache()` dipanggil — jadi controller admin yang mengubah role/permission **wajib** memanggil salah satu method invalidate di atas setelah insert/delete, bukan hanya mengandalkan TTL.
 
 ## 28.6 Prinsip RBAC
 
