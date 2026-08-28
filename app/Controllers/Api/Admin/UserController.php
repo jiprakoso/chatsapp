@@ -100,4 +100,24 @@ class UserController extends AdminBaseController
 
         return $this->success(['user_id' => (int) $id, 'is_banned' => false]);
     }
+    
+    public function me()
+    {
+        $userId = $this->currentUserId();
+        $userModel = new UserModel();
+        $user = $userModel->find($userId);
+        
+        if (!$user) {
+            return $this->error('User not found', 404);
+        }
+        
+        unset($user['password_hash']);
+        
+        $roleIds = (new UserRoleModel())->roleIdsForUser($userId);
+        $user['roles'] = $roleIds === []
+            ? []
+            : (new RoleModel())->whereIn('id', $roleIds)->findAll();
+        
+        return $this->success($user);
+    }
 }

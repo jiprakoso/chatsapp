@@ -15,6 +15,7 @@ use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\JwtAuthFilter;
 use App\Filters\PermissionFilter;
 use App\Filters\InternalAuthFilter;
+use App\Filters\WebAdminAuthFilter;
 
 class Filters extends BaseFilters
 {
@@ -40,6 +41,7 @@ class Filters extends BaseFilters
         'jwtauth'       => JwtAuthFilter::class,
         'permission'    => PermissionFilter::class,
         'internalauth'  => InternalAuthFilter::class,
+        'webadminauth'  => WebAdminAuthFilter::class,
     ];
 
     /**
