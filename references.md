@@ -225,6 +225,10 @@ CREATE TABLE users (
 
     photo VARCHAR(255) NULL,
 
+    is_banned TINYINT(1) NOT NULL DEFAULT 0,
+    banned_at DATETIME NULL,
+    banned_reason VARCHAR(255) NULL,
+
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     deleted_at DATETIME NULL,
@@ -235,6 +239,8 @@ CREATE TABLE users (
 ```
 
 `username` dan `email` sama-sama unik dan sama-sama bisa dipakai untuk login (lihat `UserModel::findByLogin()`).
+
+`is_banned`/`banned_at`/`banned_reason` sengaja **tidak** masuk `$allowedFields` di `UserModel` (tidak boleh mass-assignable lewat `update()` biasa) — hanya bisa diubah lewat `UserModel::ban()`/`unban()` yang menulis langsung via query builder. `AuthController::login()` menolak (403) user dengan `is_banned = 1`.
 
 ---
 
@@ -253,6 +259,8 @@ CREATE TABLE conversations (
 
     created_by BIGINT UNSIGNED NULL,
 
+    private_key VARCHAR(100) NULL UNIQUE,
+
     last_message_id BIGINT UNSIGNED NULL,
     last_message_at DATETIME NULL,
     last_sender_id BIGINT UNSIGNED NULL,
@@ -267,6 +275,8 @@ CREATE TABLE conversations (
     INDEX idx_created_by (created_by)
 );
 ```
+
+`private_key` langsung digabung ke skema utama sejak awal implementasi (bukan ditambah belakangan) — lihat Section 6. `created_by` pakai FK `ON DELETE SET NULL` ke `users.id`; `last_message_id`/`last_sender_id` sengaja **tanpa** FK karena sifatnya kolom cache denormalisasi, bukan relasi ketat (menghindari masalah FK sirkular dengan `messages`, yang justru mereferensikan `conversations`).
 
 ### Catatan
 
@@ -354,13 +364,9 @@ Members:
 
 ## private_key
 
-Untuk mencegah dua private conversation antara pasangan user yang sama, disarankan menambahkan:
+Untuk mencegah dua private conversation antara pasangan user yang sama, kolom `private_key VARCHAR(100) NULL UNIQUE` sudah menjadi bagian skema utama `conversations` (Section 4).
 
-```sql
-private_key VARCHAR(100) NULL UNIQUE
-```
-
-Nilai dibuat berdasarkan user ID terurut.
+Nilai dibuat berdasarkan user ID terurut lewat `ConversationModel::makePrivateKey($a, $b)` (`sort()` lalu `implode(':', ...)`).
 
 Contoh:
 
@@ -375,7 +381,7 @@ Dengan demikian:
 5 chat 8
 ```
 
-selalu menggunakan conversation yang sama.
+selalu menggunakan conversation yang sama — `ConversationController::createPrivate()` mencari lewat `ConversationModel::findPrivateConversation()` sebelum insert; jika sudah ada, conversation yang sama dikembalikan (idempotent, sudah diuji dari kedua arah user A→B dan B→A).
 
 Untuk group, `private_key` bernilai NULL.
 
@@ -419,6 +425,8 @@ CREATE TABLE messages (
 `id` menjadi identifier utama message.
 
 Client tidak membuat ID database sendiri.
+
+FK: `conversation_id` → `conversations.id` (`CASCADE`), `sender_id` → `users.id` (`CASCADE`), `reply_message_id` → `messages.id` self-reference (`SET NULL`, nullable). Self-referencing FK ini didefinisikan dalam `CREATE TABLE` yang sama dan berhasil dijalankan MySQL tanpa masalah.
 
 ---
 
@@ -495,6 +503,24 @@ user 20
 user 35
 ```
 
+### Implementasi
+
+FK: `message_id` → `messages.id` (`CASCADE`), `user_id` → `users.id` (`CASCADE`).
+
+`MessageReadModel::markDelivered()`/`markRead()` pakai `INSERT ... ON DUPLICATE KEY UPDATE` (upsert) supaya idempotent — timestamp **pertama** tidak tertimpa oleh panggilan berikutnya (`COALESCE(delivered_at, VALUES(delivered_at))`). `markRead()` juga mengisi `delivered_at` bila belum ada, karena read secara logis menyiratkan delivered.
+
+Endpoint (semua wajib `jwtauth`, dan wajib member conversation dari pesan tsb — 403 jika bukan):
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| POST | `/api/messages/(:num)/delivered` | Tandai delivered untuk user login. No-op untuk pesan milik sendiri |
+| POST | `/api/messages/(:num)/read` | Tandai read (+ delivered jika belum) untuk user login; juga menaikkan `conversation_members.last_read_message_id`. No-op (tidak insert `message_reads`) untuk pesan milik sendiri |
+| GET | `/api/messages/(:num)/status` | Read receipt: siapa saja delivered/read pesan ini (untuk sender/anggota lain melihat centang) |
+
+Seperti `MessageController::store()`, jalur REST ini opsional — jalur utama tetap Socket.IO (Section 31 menandai delivered/read sebagai "hanya Socket.IO"), tapi berguna selama Node Socket.IO server belum ada di repo ini dan untuk keperluan sinkronisasi/testing.
+
+Sudah diuji end-to-end: delivered→read berurutan, upsert idempotent (delivered dua kali tidak mengubah timestamp pertama), no-op untuk pesan sendiri (tidak ada row dibuat), 403 untuk non-member, 404 untuk pesan tidak ada.
+
 ---
 
 # 10. Read status alternatif
@@ -520,6 +546,16 @@ Artinya user sudah membaca sampai message 5000.
 Pendekatan ini lebih hemat daripada membuat row read untuk setiap message.
 
 Gunakan `message_reads` bila membutuhkan detail delivered/read per message. Gunakan `last_read_message_id` untuk optimasi group besar.
+
+### Implementasi
+
+Kedua pendekatan dipakai berdampingan, bukan salah satu saja:
+
+- `ConversationMemberModel::bumpLastRead($conversationId, $userId, $messageId)` — `UPDATE ... SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), ?)`, jadi nilai **tidak pernah turun** walau dipanggil dengan `message_id` lebih kecil dari yang tersimpan (sudah diuji).
+- `POST /api/conversations/(:num)/read` (body opsional `{ "message_id": 123 }`, default ke `conversations.last_message_id` bila kosong) — **hanya** memanggil `bumpLastRead()`, sengaja **tidak** insert baris apa pun ke `message_reads` walau ada banyak pesan di antara posisi baca lama dan baru. Ini persis alasan Section 10: membuka conversation dan menandai "sudah dibaca sampai sini" tidak boleh berbanding lurus dengan jumlah pesan × jumlah member.
+- `MessageController::markRead()` (per pesan) tetap menulis ke `message_reads` (detail granular) **dan** memanggil `bumpLastRead()` — dua mekanisme diperbarui bersamaan supaya konsisten walau dipakai campur.
+
+Sudah diuji: bulk mark-read menaikkan `last_read_message_id` tanpa menambah baris `message_reads`, dan tidak bisa membuatnya turun.
 
 ---
 
@@ -573,6 +609,29 @@ message metadata
 ```
 
 Storage dapat berupa local filesystem, object storage, atau service lain.
+
+### Implementasi
+
+FK: `message_id` → `messages.id` (`CASCADE`). Storage yang dipakai: **local filesystem**, di `writable/uploads/attachments/{conversation_id}/{random_name}.{ext}` — sengaja **di luar** `public/` (document root), supaya file tidak bisa diakses langsung dengan menebak URL. Kolom `file_url` di database menyimpan storage key relatif (mis. `attachments/3/64f2ab....jpg`), bukan URL HTTP publik.
+
+Klien mengakses file lewat endpoint ber-otorisasi, bukan link statis:
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| POST | `/api/conversations/(:num)/attachments` | Upload file + buat message dalam satu request (multipart: `file` wajib, `caption`/`reply_message_id` opsional). Validasi membership, mime whitelist, ukuran maks |
+| GET | `/api/attachments/(:num)` | Stream file — wajib `jwtauth` + anggota conversation dari pesan pemilik attachment. `Content-Type` diambil dari `mime_type` tervalidasi (bukan ditebak dari ekstensi), `Content-Disposition: inline` dengan nama file asli klien |
+
+Saat serialisasi ke JSON (list history, response upload), `MessageAttachmentModel` mengganti `file_url` mentah dengan link `GET /api/attachments/(:num)` yang benar-benar bisa diakses — lihat `MessageAttachmentModel::present()`. Query mentah (`find()`) tetap mengembalikan storage key asli, dipakai `AttachmentController` untuk resolve path fisik.
+
+Mime whitelist per kategori (`MessageController::ALLOWED_MIMES`): image (jpeg/png/gif/webp) → `type=image`, video (mp4/quicktime/webm) → `type=video`, audio (mpeg/mp4/wav/ogg) → `type=audio`, dokumen (pdf/doc/docx/xls/xlsx/zip/txt) → `type=file`. Selain itu ditolak (422). Batas ukuran 20MB di level aplikasi (`MessageController::MAX_FILE_SIZE_KB`) — **catatan operasional**: batas efektif di suatu environment tetap dibatasi juga oleh `upload_max_filesize`/`post_max_size` di `php.ini`; environment testing lokal defaultnya 2MB, jauh di bawah 20MB, jadi untuk mengizinkan upload sampai 20MB sungguhan, `php.ini`/pool PHP-FPM production wajib dinaikkan juga.
+
+Untuk gambar, `width`/`height` diambil otomatis lewat `getimagesize()` setelah file disimpan. `duration` (audio/video) dibiarkan NULL — butuh library tambahan (ffmpeg dsb) yang di luar scope saat ini.
+
+Setiap message yang dikembalikan API (history, kirim pesan, edit) selalu menyertakan key `attachments` (array, kosong untuk pesan teks biasa) lewat `MessageController::withAttachments()`/`withAttachmentsList()`.
+
+Sudah diuji end-to-end: upload gambar (width/height terdeteksi otomatis) dan dokumen, stream balik byte-identik dengan file asli, `Content-Type`/nama file terbaca benar, 403 untuk non-member (baik saat upload maupun saat fetch), 404 untuk attachment/file tidak ada, 422 untuk mime tidak didukung & file tanpa upload, dan attachment muncul otomatis di response history.
+
+Ditemukan & diperbaiki selama implementasi ini: `ApiBaseController::input()` sebelumnya memanggil `getJSON()` tanpa cek `Content-Type`, yang melempar exception fatal untuk request `multipart/form-data` (dipakai upload). Sekarang `input()` cuma mencoba parse JSON kalau `Content-Type: application/json`, else langsung ke `getPost()`.
 
 ---
 
@@ -708,6 +767,17 @@ sync_required
 ```
 
 Nama event dapat berubah, tetapi convention harus konsisten di seluruh project.
+
+### Implementasi
+
+Seluruh event di atas sudah diimplementasikan di `socket-server/` (Section 30) persis dengan nama ini, kecuali `sync_required` — direservasi untuk logika rekonsiliasi reconnect (Section 20) yang belum dirancang detail semantiknya, sengaja belum di-emit daripada menebak perilaku yang tidak dispesifikasikan di sini.
+
+Dua event tambahan di luar daftar ini, ditambahkan karena kebutuhan operasional nyata (bukan mengganti convention di atas):
+
+- `error` — payload `{ event, status, message, errors }`, di-emit saat sebuah aksi gagal (mis. otorisasi ditolak CI4) dan client tidak memakai ack callback untuk event tsb.
+- `token_expired` — di-emit saat CI4 balas 401 ke request yang diteruskan Node, menandakan JWT socket sudah kedaluwarsa selagi koneksi masih terbuka; client perlu re-authenticate dengan token baru.
+
+Event yang mendukung ack (Section 33: `authenticate`, `join_conversation`, `leave_conversation`, `send_message`, `message_edit`, `message_delete`, `message_delivered`, `message_read`) selalu membalas lewat callback jika client menyediakannya — jadi client bisa pilih pola ack ATAU dengar event terpisah (`authenticated`, `new_message`, dst), keduanya di-emit.
 
 ---
 
@@ -1059,6 +1129,47 @@ Ketika aplikasi aktif/reconnect, data tetap diverifikasi melalui API/local synch
 
 ---
 
+## 23.1 Implementasi
+
+**Arsitektur**: Node socket-server mengirim push FCM, bukan CI4. Alasannya:
+- presence state (online/offline) ada di Node (Section 25/30.2)
+- CI4 tidak tahu siapa yang online realtime
+- Firebase Admin SDK hanya tersedia di Node (php-jwt di CI4 tidak punya akses firebase-admin)
+
+**Alur**:
+1. `send_message` diproses di CI4 → message masuk DB → Socket.IO broadcast ke room
+2. `notificationService.notifyNewMessage(conversationId, message, senderId, token)` dipanggil
+3. Ambil daftar member conversation via CI4 API (`GET /conversations/{id}/members`)
+4. Filter member yang **offline** (tidak ada di `presence.onlineUsers`)
+5. Ambil FCM token aktif milik member offline via internal API CI4 (`GET /internal/devices?user_ids=...` dengan `X-Internal-Key`)
+6. Kirim multicast FCM via `firebase-admin/messaging` (sendEachForMulticast)
+7. Jika FCM balik error `invalid-registration-token` / `registration-token-not-registered` → panggil internal API CI4 `POST /internal/devices/deactivate` untuk menonaktifkan token tsb, supaya push berikutnya tidak percuma.
+
+**Endpoint CI4 internal** (service-to-service, `X-Internal-Key`):
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| GET | `/internal/devices?user_ids=1,2,3` | FCM token aktif milik user-user tsb |
+| POST | `/internal/devices/deactivate` | Body `{ "tokens": [...] }` — nonaktifkan token invalid |
+
+**Endpoint CI4 public** (user login, JWT):
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| POST | `/devices` | Registrasi/refresh FCM token: `{ platform, fcm_token }` |
+| DELETE | `/devices/{id}` | Nonaktifkan device sendiri (logout) |
+
+**Payload FCM** (notification + data):
+```json
+{
+  "notification": { "title": "Pesan baru", "body": "Isi pesan..." },
+  "data": { "conversationId": "10", "messageId": "1001", "senderId": "5", "type": "text" },
+  "tokens": ["fcm_token_1", "fcm_token_2"]
+}
+```
+
+**Catatan**: `data` payload wajib dikirim (bukan hanya `notification`) supaya Flutter bisa handle background/terminated state dengan benar tanpa bergantung pada `notification` banner OS.
+
+---
+
 # 24. Typing Indicator
 
 Typing tidak perlu disimpan ke database.
@@ -1372,6 +1483,7 @@ app/
 │   └── Jwt.php              (baca JWT_SECRET dari .env)
 │
 ├── Models/
+│   ├── UserModel.php
 │   ├── RoleModel.php
 │   ├── PermissionModel.php
 │   ├── RolePermissionModel.php
@@ -1382,7 +1494,9 @@ app/
 │
 └── Controllers/
     └── Api/
+        ├── AuthController.php        (register, login — publik, tanpa filter)
         └── Admin/
+            ├── AdminBaseController.php   (helper success()/error()/input() bersama)
             ├── RoleController.php
             ├── PermissionController.php
             └── UserController.php
@@ -1442,21 +1556,56 @@ Sudah diverifikasi end-to-end: mengubah `role_permissions` langsung di database 
 - Permission baru ditambahkan lewat data (`permissions` table), bukan hardcode di banyak tempat.
 - Setiap endpoint admin/sensitif wajib melewati `PermissionFilter`, tidak cukup hanya `JwtAuthFilter`.
 
+## 28.7 Endpoint yang Sudah Diimplementasikan
+
+### Auth (publik, tanpa filter)
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| POST | `/api/auth/register` | Buat user baru, auto-assign role `user`, langsung kembalikan token |
+| POST | `/api/auth/login` | Login pakai `identifier` (email/username) + `password`; ditolak (403) jika `is_banned` |
+
+### Admin (wajib `jwtauth`, tiap route dengan `permission:*` masing-masing)
+
+| Method | Endpoint | Permission | Keterangan |
+|---|---|---|---|
+| GET | `/api/admin/roles` | `roles.manage` | List role (paginated) |
+| GET | `/api/admin/roles/(:num)` | `roles.manage` | Detail role + daftar permission-nya |
+| POST | `/api/admin/roles` | `roles.manage` | Buat role baru (`is_system` selalu 0) |
+| PUT | `/api/admin/roles/(:num)` | `roles.manage` | Update `name`/`description` |
+| DELETE | `/api/admin/roles/(:num)` | `roles.manage` | Tolak jika `is_system=1` atau masih ada user memegang role ini |
+| PUT | `/api/admin/roles/(:num)/permissions` | `roles.manage` | Set ulang seluruh permission role (`RolePermissionModel::syncForRole()`), auto invalidate cache |
+| GET | `/api/admin/permissions` | `permissions.manage` | List permission |
+| POST | `/api/admin/permissions` | `permissions.manage` | Buat permission baru |
+| DELETE | `/api/admin/permissions/(:num)` | `permissions.manage` | Hapus permission, invalidate cache tiap role yang memegangnya |
+| GET | `/api/admin/users` | `users.view` | List user (paginated) |
+| GET | `/api/admin/users/(:num)` | `users.view` | Detail user + role yang dimiliki |
+| PUT | `/api/admin/users/(:num)/role` | `roles.manage` | Ganti role aktif user (satu user = satu role aktif, `UserRoleModel::setSingleRole()`) |
+| POST | `/api/admin/users/(:num)/ban` | `users.ban` | Set `is_banned=1` + `banned_reason` |
+| POST | `/api/admin/users/(:num)/unban` | `users.ban` | Set `is_banned=0` |
+
+Semua endpoint di atas sudah diuji end-to-end (register → login → assign role → cek permission ditolak/diterima → ban memblokir login → unban memulihkan → guard hapus role sistem/role-masih-dipakai → validasi duplikat).
+
 ---
 
 # 29. CodeIgniter 4 API Structure
 
-Rekomendasi awal:
+Struktur aktual (per implementasi core conversation/message + read status + attachment; `UserDeviceModel` menyusul di tahap FCM):
 
 ```text
 app/
 ├── Controllers/
 │   └── Api/
-│       ├── AuthController.php
+│       ├── ApiBaseController.php     (helper success()/error()/input()/currentUserId() bersama)
+│       ├── AuthController.php        (register, login — publik)
 │       ├── ConversationController.php
 │       ├── MessageController.php
-│       ├── UserController.php
-│       └── UploadController.php
+│       ├── AttachmentController.php  (stream file, GET /api/attachments/(:num))
+│       └── Admin/
+│           ├── AdminBaseController.php   (extends ApiBaseController)
+│           ├── RoleController.php
+│           ├── PermissionController.php
+│           └── UserController.php
 │
 ├── Models/
 │   ├── UserModel.php
@@ -1465,53 +1614,145 @@ app/
 │   ├── MessageModel.php
 │   ├── MessageReadModel.php
 │   ├── MessageAttachmentModel.php
-│   └── UserDeviceModel.php
+│   ├── RoleModel.php
+│   ├── PermissionModel.php
+│   ├── RolePermissionModel.php
+│   └── UserRoleModel.php
 │
 ├── Services/
-│   ├── ConversationService.php
-│   ├── MessageService.php
-│   ├── NotificationService.php
-│   └── UploadService.php
+│   └── AuthorizationService.php
+│
+├── Libraries/
+│   ├── Jwt.php
+│   └── CurrentUser.php
 │
 └── Filters/
-    └── JwtAuthFilter.php
+    ├── JwtAuthFilter.php
+    └── PermissionFilter.php
 ```
 
-Business logic sebaiknya berada di Service, bukan ditumpuk di Controller.
+Business logic conversation/message untuk saat ini langsung di Controller (masih ringkas — validasi + panggil Model). Belum diekstrak ke `Service` terpisah karena scope "core" belum butuh reuse lintas Controller; ekstraksi ke `ConversationService`/`MessageService` masuk akal begitu Node Socket.IO server (Section 30) perlu logic yang sama (mis. update ringkasan conversation), supaya tidak duplikat antara CI4 dan Node.
+
+## 29.1 Endpoint Conversation & Message (Core)
+
+Semua wajib `jwtauth`; tidak ada permission RBAC khusus — otorisasi dicek langsung di Controller lewat status keanggotaan (`ConversationMemberModel::isActiveMember()`), sesuai prinsip Section 27 ("Server harus mengecek: apakah user anggota conversation ini?").
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| GET | `/api/conversations` | Chat list milik user login, urut `last_message_at` DESC (paginated) |
+| POST | `/api/conversations` | Buat conversation. `type: private` → cari/buat via `private_key` (idempotent). `type: group` → wajib `name` + `member_ids[]`, pembuat jadi `owner` |
+| GET | `/api/conversations/(:num)` | Detail + daftar member aktif. 403 jika bukan member |
+| GET | `/api/conversations/(:num)/messages` | History, cursor pagination lewat query `before_id`/`after_id`/`limit` (default 50, maks 100) — bukan OFFSET |
+| POST | `/api/conversations/(:num)/messages` | Kirim pesan (jalur REST opsional, lihat Section 30-31; jalur utama tetap Socket.IO). `sender_id` selalu dari `currentUser`, bukan payload. Auto update ringkasan conversation |
+| PUT | `/api/messages/(:num)` | Edit pesan — hanya sender sendiri, set `edited_at` |
+| DELETE | `/api/messages/(:num)` | Hapus pesan (soft delete) — sender sendiri, **atau** member dengan role `owner`/`admin` di conversation tsb (moderasi tingkat conversation, Section 5 — terpisah dari RBAC sistem Section 28) |
+| POST | `/api/conversations/(:num)/read` | Bulk mark-read (hanya `last_read_message_id`, lihat Section 10) |
+| POST | `/api/messages/(:num)/delivered` | Mark delivered granular per pesan (Section 9) |
+| POST | `/api/messages/(:num)/read` | Mark read granular + bump `last_read_message_id` (Section 9) |
+| GET | `/api/messages/(:num)/status` | Read receipt per pesan (siapa delivered/read) |
+| POST | `/api/conversations/(:num)/attachments` | Upload file (multipart) + buat message dalam satu request (Section 11) |
+| GET | `/api/attachments/(:num)` | Stream file attachment — wajib anggota conversation |
+
+Sudah diuji end-to-end: conversation/message core (30 skenario — dedup private conversation dari kedua arah, penolakan akses non-member 403, validasi group, cursor pagination, reply, edit/delete otorisasi, soft-delete, ringkasan `last_message_*` auto-update) + read status (16 skenario — delivered→read, upsert idempotent, no-op pesan sendiri, bulk read tidak membengkakkan `message_reads`, `last_read_message_id` tidak bisa turun, 403/404/401) + attachment (13 skenario — upload gambar & dokumen, stream byte-identik, `Content-Type`/nama file benar, width/height gambar otomatis, 403/404/422 untuk berbagai kondisi invalid).
 
 ---
 
 # 30. Node Socket.IO Structure
 
-Contoh:
+Struktur aktual (`socket-server/`, project Node terpisah di root repo yang sama):
 
 ```text
 socket-server/
-├── src/
-│   ├── server.js
-│   │
-│   ├── socket/
-│   │   ├── auth.js
-│   │   ├── connection.js
-│   │   ├── conversation.js
-│   │   ├── message.js
-│   │   ├── typing.js
-│   │   └── presence.js
-│   │
-│   ├── services/
-│   │   ├── messageService.js
-│   │   ├── conversationService.js
-│   │   └── notificationService.js
-│   │
-│   └── database/
-│       └── connection.js
+├── package.json
+├── .env.example        (JWT_SECRET, CI4_API_BASE_URL, PORT, INTERNAL_API_KEY, FIREBASE_SERVICE_ACCOUNT_PATH)
+├── .env                 (git-ignored, disalin dari .env.example)
 │
-└── package.json
+└── src/
+    ├── server.js         (http server + Socket.IO + /health)
+    │
+    ├── config/
+    │   └── env.js         (baca & validasi env var)
+    │
+    ├── socket/
+    │   ├── auth.js         (verifyToken — verifikasi JWT lokal, sama seperti JwtAuthFilter di CI4)
+    │   ├── connection.js    (titik masuk io.on('connection'), wiring authenticate + disconnect)
+    │   ├── conversation.js  (autoJoinConversations, join_conversation, leave_conversation)
+    │   ├── message.js       (send_message, message_edit, message_delete, message_delivered, message_read)
+    │   ├── typing.js        (typing_start, typing_stop — ephemeral, tanpa panggilan API)
+    │   ├── presence.js      (state in-memory Map<userId, Set<socketId>> untuk multi-device)
+    │   ├── rooms.js          (helper conversationRoom(id))
+    │   └── errors.js         (translate ApiError -> ack/emit('error'), + event token_expired utk 401)
+    │
+    └── services/
+        ├── httpClient.js         (fetch wrapper ke CI4, forward Bearer token, lempar ApiError terstruktur)
+        ├── conversationService.js
+        ├── messageService.js
+        └── notificationService.js  (FCM push via firebase-admin, lihat Section 23.1)
 ```
 
-Node Socket Server dapat mengakses database secara langsung untuk operasi realtime tertentu, tetapi business rule utama sebaiknya tetap konsisten dan tidak dibuat ganda antara Node dan CodeIgniter.
+**Keputusan arsitektur**: Node **tidak** akses database langsung — semua operasi tulis (send message, edit, delete, delivered, read, cek membership) diteruskan ke REST API CI4 yang sudah ada, memakai token JWT milik socket yang sama (`Authorization: Bearer <token>`). Alasannya: Flutter juga akan memuat data manual lewat API yang sama, jadi business rule (validasi membership, sender_id dari JWT, dst) harus satu sumber kebenaran — tidak dobel antara Node dan CodeIgniter. Konsekuensinya: setiap operasi tulis via socket menambah satu HTTP round-trip Node→CI4, trade-off yang diterima demi konsistensi. `database/connection.js` dari contoh struktur awal sengaja **tidak dibuat** karena Node tidak pernah konek DB.
 
-Alternatif yang lebih ketat adalah Node memanggil internal API/service CodeIgniter untuk operasi tertentu. Pilihan ini tergantung kebutuhan performa dan kompleksitas proyek.
+**FCM Integration**: `notificationService.js` menggunakan `firebase-admin/messaging` untuk mengirim push notification ke member offline. Memerlukan `FIREBASE_SERVICE_ACCOUNT_PATH` di env dan `INTERNAL_API_KEY` (sama dengan CI4) untuk memanggil endpoint internal CI4 guna ambil FCM token member offline.
+
+## 30.1 Autentikasi Socket
+
+`JWT_SECRET` di `socket-server/.env` **harus sama persis** dengan `JWT_SECRET` di `.env` root (CI4) — Node memverifikasi signature token secara lokal (stateless, pakai library `jsonwebtoken`, algoritma HS256) tanpa round-trip ke CI4. Sudah diuji lintas bahasa: token yang diterbitkan `App\Libraries\Jwt::encode()` (PHP) berhasil diverifikasi oleh `jsonwebtoken` (Node) dengan secret yang sama.
+
+Alur:
+
+```text
+Client connect
+     |
+     v
+emit 'authenticate' { token }
+     |
+     v
+verifyToken() lokal (HS256)
+     |
+     +-- invalid --> ack {success:false} (socket TETAP terbuka, client boleh retry)
+     |
+     v
+valid: socket.data.userId, socket.data.token diisi
+     |
+     v
+autoJoinConversations() -> GET /api/conversations (lintas halaman)
+     |
+     v
+join semua room conversation:{id}
+     |
+     v
+daftarkan handler conversation/message/typing (baru sekarang aktif)
+     |
+     v
+presence: tandai online, broadcast user_online jika device pertama
+     |
+     v
+ack {success:true} + emit 'authenticated'
+```
+
+Handler `conversation`/`message`/`typing` **baru didaftarkan setelah authenticate sukses** — socket yang belum authenticate tidak punya event lain yang bisa dipanggil sama sekali (bukan sekadar ditolak di dalam handler).
+
+Kalau CI4 balas 401 (token kedaluwarsa selagi socket masih terbuka), Node mengirim event tambahan `token_expired` supaya client tahu harus re-authenticate dengan token baru, bukan sekadar retry.
+
+## 30.2 Presence & Multi-device (Section 25-26)
+
+State disimpan in-memory: `Map<userId, Set<socketId>>` (module `presence.js`). Broadcast `user_online` hanya saat socket **pertama** milik user connect; `user_offline` hanya saat socket **terakhir** disconnect — device lain yang masih connect tidak memicu broadcast palsu. Sudah diuji: user dengan 2 device, disconnect salah satu tidak memicu `user_offline`; disconnect device terakhir baru memicu.
+
+State ini eksplisit didokumentasikan sebagai **tidak permanen dan single-instance-only**, konsisten dengan Section 25/37 — begitu di-scale ke beberapa instance Node, wajib pindah ke Redis/shared storage.
+
+## 30.3 Auto-join vs join_conversation Manual
+
+`join_conversation` tetap ada (dipanggil eksplisit untuk conversation yang baru dibuat setelah socket terhubung) dan **selalu** verifikasi ulang membership lewat `GET /api/conversations/:id` ke CI4 — tidak percaya cache lokal, sesuai Section 27 ("Server harus memverifikasi bahwa user memang anggota conversation sebelum mengizinkan join"). Sudah diuji: user bukan member mendapat error (status dari CI4, mis. 403/404) dan tidak berhasil join room.
+
+## 30.4 Deployment
+
+Ditambahkan sebagai service `node` di `docker-compose.yml` (image `node:20-alpine`, mount `./socket-server`, `env_file: ./socket-server/.env`). Karena `php` pakai `network_mode: host` sedangkan `nginx`/`node` di default bridge network compose, Node menjangkau CI4 lewat `CI4_API_BASE_URL=http://nginx/api` (DNS internal compose), bukan `localhost`.
+
+**Env vars wajib** di `socket-server/.env`:
+- `JWT_SECRET` — sama persis dengan CI4 root `.env`
+- `CI4_API_BASE_URL` — base URL REST API CI4
+- `INTERNAL_API_KEY` — sama persis dengan CI4 root `.env` (`INTERNAL_API_KEY`)
+- `FIREBASE_SERVICE_ACCOUNT_PATH` — path ke service account JSON (mis. `./service-account.json`), generate dari Firebase Console > Project Settings > Service Accounts > Generate New Private Key
 
 ---
 

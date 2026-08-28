@@ -64,4 +64,9 @@ class RoleModel extends Model
 
         return (bool) $this->delete($roleId);
     }
+
+    public function findByName(string $name): ?array
+    {
+        return $this->where('name', $name)->first();
+    }
 }

@@ -1,0 +1,96 @@
+import { getMessaging } from 'firebase-admin/messaging';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { CI4_API_BASE_URL, INTERNAL_API_KEY } from '../config/env.js';
+import { ci4Request } from './httpClient.js';
+
+let messaging = null;
+
+function initFirebase() {
+  if (getApps().length === 0) {
+    const saPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    if (!saPath) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_PATH not set in env');
+    }
+    initializeApp({
+      credential: cert(saPath),
+    });
+  }
+  messaging = getMessaging();
+}
+
+export async function notifyNewMessage(conversationId, message, senderId, token) {
+  if (!messaging) {
+    initFirebase();
+  }
+
+  try {
+    const membersRes = await ci4Request(token, 'GET', `/conversations/${conversationId}/members`);
+    const memberIds = membersRes.data.members.map(m => m.user_id).filter(id => id !== senderId);
+
+    if (memberIds.length === 0) return;
+
+    const onlineUserIds = new Set();
+    const { onlineUsers } = await import('../socket/presence.js');
+    onlineUsers.forEach((_, userId) => onlineUserIds.add(userId));
+
+    const offlineMemberIds = memberIds.filter(id => !onlineUserIds.has(id));
+
+    if (offlineMemberIds.length === 0) return;
+
+    const devicesRes = await ci4Request(
+      token,
+      'GET',
+      `/internal/devices?user_ids=${offlineMemberIds.join(',')}`,
+      null,
+      { 'X-Internal-Key': INTERNAL_API_KEY }
+    );
+
+    const tokens = devicesRes.data.devices
+      .filter(d => d.fcm_token)
+      .map(d => d.fcm_token);
+
+    if (tokens.length === 0) return;
+
+    const payload = {
+      notification: {
+        title: message.type === 'image' ? '📷 Foto' : message.type === 'file' ? '📎 File' : 'Pesan baru',
+        body: message.content?.substring(0, 100) || '',
+      },
+      data: {
+        conversationId: String(conversationId),
+        messageId: String(message.id),
+        senderId: String(senderId),
+        type: message.type || 'text',
+      },
+      tokens,
+    };
+
+    const response = await messaging.sendEachForMulticast(payload);
+
+    if (response.failureCount > 0) {
+      const failedTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const errorCode = resp.error?.code;
+          if (errorCode === 'messaging/invalid-registration-token' ||
+              errorCode === 'messaging/registration-token-not-registered') {
+            failedTokens.push(tokens[idx]);
+          }
+        }
+      });
+
+      if (failedTokens.length > 0) {
+        await ci4Request(
+          token,
+          'POST',
+          '/internal/devices/deactivate',
+          { tokens: failedTokens },
+          { 'X-Internal-Key': INTERNAL_API_KEY }
+        );
+      }
+    }
+
+  } catch (err) {
+    console.error('[notificationService] FCM send failed:', err.message);
+  }
+}

@@ -14,6 +14,7 @@ use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\JwtAuthFilter;
 use App\Filters\PermissionFilter;
+use App\Filters\InternalAuthFilter;
 
 class Filters extends BaseFilters
 {
@@ -38,6 +39,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'jwtauth'       => JwtAuthFilter::class,
         'permission'    => PermissionFilter::class,
+        'internalauth'  => InternalAuthFilter::class,
     ];
 
     /**

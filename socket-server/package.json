@@ -1,0 +1,21 @@
+{
+  "name": "chatsapp-socket-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js + Socket.IO realtime layer untuk chatsapp. Menangani koneksi socket, room per-conversation, presence, dan mem-forward operasi tulis ke CodeIgniter 4 REST API (bukan akses database langsung), lihat references.md Section 29-30.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.7.5"
+  }
+}
