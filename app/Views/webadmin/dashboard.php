@@ -124,14 +124,17 @@
 <?= $this->section('pageScripts') ?>
 <script>
 $(document).ready(function() {
-    loadDashboardStats();
-    loadRecentActivity();
-
-    // Refresh every 30 seconds
-    setInterval(function() {
+    // Tunggu auth siap agar request pertama selalu pakai token valid
+    window.AdminApp.ready.then(function() {
         loadDashboardStats();
         loadRecentActivity();
-    }, 30000);
+
+        // Refresh every 30 seconds
+        setInterval(function() {
+            loadDashboardStats();
+            loadRecentActivity();
+        }, 30000);
+    });
 });
 
 function loadDashboardStats() {

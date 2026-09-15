@@ -141,31 +141,34 @@
 var usersTable;
 
 $(document).ready(function() {
-    initUsersTable();
-    loadRolesForSelect();
+    // Tunggu auth siap agar request pertama selalu pakai token valid
+    window.AdminApp.ready.then(function() {
+        initUsersTable();
+        loadRolesForSelect();
 
-    // Search input
-    $('#tableSearch').on('keyup', debounce(function() {
-        usersTable.search(this.value).draw();
-    }, 300));
+        // Search input
+        $('#tableSearch').on('keyup', debounce(function() {
+            usersTable.search(this.value).draw();
+        }, 300));
 
-    // Filters (client-side: DataTables mencari teks polos di dalam badge HTML)
-    $('#filterRole').on('change', function() {
-        usersTable.column(4).search(this.value).draw();
-    });
-    $('#filterStatus').on('change', function() {
-        var map = { banned: 'Banned', active: 'Active' };
-        usersTable.column(5).search(map[this.value] || '').draw();
-    });
+        // Filters (client-side: DataTables mencari teks polos di dalam badge HTML)
+        $('#filterRole').on('change', function() {
+            usersTable.column(4).search(this.value).draw();
+        });
+        $('#filterStatus').on('change', function() {
+            var map = { banned: 'Banned', active: 'Active' };
+            usersTable.column(5).search(map[this.value] || '').draw();
+        });
 
-    // Assign role form
-    $('#btnSaveAssignRole').on('click', function() {
-        saveAssignRole();
-    });
+        // Assign role form
+        $('#btnSaveAssignRole').on('click', function() {
+            saveAssignRole();
+        });
 
-    // Ban/Unban
-    $('#btnConfirmBan').on('click', function() {
-        confirmBanUnban();
+        // Ban/Unban
+        $('#btnConfirmBan').on('click', function() {
+            confirmBanUnban();
+        });
     });
 });
 

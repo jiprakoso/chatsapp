@@ -82,8 +82,9 @@
             </div>
         </div>
     </aside>
-    <!-- Topbar -->
-    <header class="navbar navbar-expand-md d-print-none">
+    <!-- Topbar (tanpa navbar-expand-*: agar tidak memicu aturan Tabler
+         yang menyembunyikan .navbar-vertical) -->
+    <header class="navbar d-print-none">
         <div class="container-xl">
             <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
                 <i class="ti ti-messages me-2"></i>Chatsapp
@@ -130,8 +131,9 @@
 
 <!-- jQuery -->
 <script src="<?= base_url('assets/vendor/jquery/jquery.min.js') ?>"></script>
-<!-- Tabler JS (sudah termasuk Bootstrap 5) -->
+<!-- Tabler JS (sudah termasuk Bootstrap 5, diekspos sebagai tabler.bootstrap) -->
 <script src="<?= base_url('assets/vendor/tabler/tabler.min.js') ?>"></script>
+<script>window.bootstrap = window.tabler.bootstrap;</script>
 <!-- DataTables -->
 <script src="<?= base_url('assets/vendor/datatables/dataTables.min.js') ?>"></script>
 <script src="<?= base_url('assets/vendor/datatables/dataTables.bootstrap5.min.js') ?>"></script>

@@ -124,24 +124,27 @@ var rolesTable;
 var allPermissions = [];
 
 $(document).ready(function() {
-    loadAllPermissions();
-    initRolesTable();
+    // Tunggu auth siap agar request pertama selalu pakai token valid
+    window.AdminApp.ready.then(function() {
+        loadAllPermissions();
+        initRolesTable();
 
-    $('#tableSearch').on('keyup', debounce(function() {
-        rolesTable.search(this.value).draw();
-    }, 300));
+        $('#tableSearch').on('keyup', debounce(function() {
+            rolesTable.search(this.value).draw();
+        }, 300));
 
-    $('#filterSystem').on('change', function() {
-        var map = { '1': 'System', '0': 'Custom' };
-        rolesTable.column(3).search(map[this.value] || '').draw();
-    });
+        $('#filterSystem').on('change', function() {
+            var map = { '1': 'System', '0': 'Custom' };
+            rolesTable.column(3).search(map[this.value] || '').draw();
+        });
 
-    $('#btnSaveRole').on('click', function() {
-        saveRole();
-    });
+        $('#btnSaveRole').on('click', function() {
+            saveRole();
+        });
 
-    $('#btnConfirmDeleteRole').on('click', function() {
-        confirmDeleteRole();
+        $('#btnConfirmDeleteRole').on('click', function() {
+            confirmDeleteRole();
+        });
     });
 });
 

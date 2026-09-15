@@ -113,23 +113,26 @@ var permissionsTable;
 var resources = [];
 
 $(document).ready(function() {
-    initPermissionsTable();
-    loadResources();
+    // Tunggu auth siap agar request pertama selalu pakai token valid
+    window.AdminApp.ready.then(function() {
+        initPermissionsTable();
+        loadResources();
 
-    $('#tableSearch').on('keyup', debounce(function() {
-        permissionsTable.search(this.value).draw();
-    }, 300));
+        $('#tableSearch').on('keyup', debounce(function() {
+            permissionsTable.search(this.value).draw();
+        }, 300));
 
-    $('#filterResource').on('change', function() {
-        permissionsTable.column(2).search(this.value).draw();
-    });
+        $('#filterResource').on('change', function() {
+            permissionsTable.column(2).search(this.value).draw();
+        });
 
-    $('#btnSavePermission').on('click', function() {
-        savePermission();
-    });
+        $('#btnSavePermission').on('click', function() {
+            savePermission();
+        });
 
-    $('#btnConfirmDeletePermission').on('click', function() {
-        confirmDeletePermission();
+        $('#btnConfirmDeletePermission').on('click', function() {
+            confirmDeletePermission();
+        });
     });
 });
 

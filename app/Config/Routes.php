@@ -13,6 +13,7 @@ $routes->group('api/auth', static function ($routes) {
 // Web Admin Auth Routes (no JWT filter for login page)
 $routes->get('login', 'WebAdmin\AuthController::login');
 $routes->post('login', 'WebAdmin\AuthController::loginPost');
+$routes->post('login/refresh', 'WebAdmin\AuthController::refresh');
 $routes->get('logout', 'WebAdmin\AuthController::logout');
 
 $routes->group('api', ['filter' => 'jwtauth'], static function ($routes) {
@@ -72,6 +73,7 @@ $routes->group('api/internal', ['filter' => 'internalauth'], static function ($r
 $routes->group('', ['filter' => 'webadminauth'], static function ($routes) {
     $routes->get('/', 'WebAdmin\DashboardController::index');
     $routes->get('dashboard', 'WebAdmin\DashboardController::index');
+    $routes->get('login/token', 'WebAdmin\AuthController::token');
     $routes->get('users', 'WebAdmin\UsersController::index');
     $routes->get('users/(:num)', 'WebAdmin\UsersController::view/$1');
     $routes->get('roles', 'WebAdmin\RolesController::index');

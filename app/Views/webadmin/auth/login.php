@@ -105,22 +105,69 @@ $(document).ready(function() {
         });
     });
 
-    // Kalau sudah ada token valid, langsung ke dashboard
+    // Baru saja logout: buang token sisa supaya tidak auto-redirect dan loop.
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('logged_out')) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        sessionStorage.removeItem('auto_login_ts');
+        // Bersihkan query agar refresh tidak mengulang
+        window.history.replaceState({}, '', baseUrl + 'login');
+    }
+
+    // Kalau sudah ada token valid, langsung ke dashboard.
+    // Pemutus loop: kalau kita baru saja auto-redirect (<5 detik lalu) tapi
+    // terlempar kembali ke /login (sesi server mati), token dianggap basi.
     var storedToken = localStorage.getItem('admin_token');
-    if (storedToken) {
+    var lastAuto = parseInt(sessionStorage.getItem('auto_login_ts') || '0', 10);
+    if (storedToken && (Date.now() - lastAuto < 5000)) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        sessionStorage.removeItem('auto_login_ts');
+        storedToken = null;
+        toastr.warning('Session ended, please sign in again.');
+    }
+    // Jalur 1: session server masih hidup -> minta tokennya, langsung masuk.
+    // Ini yang memulihkan kondisi "session hidup tapi token hilang".
+    $.ajax({
+        url: baseUrl + 'login/token',
+        method: 'GET',
+        success: function(response) {
+            if (response.success && response.token) {
+                localStorage.setItem('admin_token', response.token);
+                sessionStorage.setItem('auto_login_ts', String(Date.now()));
+                window.location.href = baseUrl;
+            } else {
+                tryStoredToken(storedToken);
+            }
+        },
+        error: function() {
+            tryStoredToken(storedToken);
+        }
+    });
+
+    // Jalur 2: tidak ada session -> coba bangun dari JWT simpanan.
+    function tryStoredToken(token) {
+        if (!token) return;
+        // Lewat refresh: token valid -> session server dibangun ulang dulu,
+        // baru redirect. Tidak mungkin terlempar balik ke /login.
         $.ajax({
-            url: baseUrl + 'api/admin/users/me',
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + storedToken },
+            url: baseUrl + 'login/refresh',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ token: token }),
             success: function(response) {
                 if (response.success) {
-                    window.location.href = baseUrl;
+                    sessionStorage.setItem('auto_login_ts', String(Date.now()));
+                    window.location.href = response.redirect;
                 } else {
                     localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
                 }
             },
             error: function() {
                 localStorage.removeItem('admin_token');
+                localStorage.removeItem('admin_user');
             }
         });
     }

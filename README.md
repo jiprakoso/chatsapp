@@ -16,7 +16,7 @@ Dokumen desain rinci: `references.md`. Status pengerjaan: `TODO.md`.
               v                               v
   +-------------------+           +----------------------+
   |  CodeIgniter 4    |           |  Node.js + Socket.IO |
-  |  REST API (:8090) |           |  Realtime (:4000)    |
+  |  REST API (:8080) |           |  Realtime (:4000)    |
   +---------+---------+           +----------+-----------+
             |                                |
             +----------------+---------------+
@@ -74,7 +74,7 @@ Realtime (Node):
 | Realtime | Node.js 20+, `socket.io@4`, `jsonwebtoken`, `firebase-admin@12` |
 | Database | MariaDB/MySQL (13 migrasi), Valkey 8 (cache db0 + session db1, ekstensi php-redis) |
 | Web Admin | CI4 Views + Metronic 8.2.9 (`public/assets/`), jQuery AJAX + DataTables |
-| Infra | Docker Compose: `valkey`, `php` (PHP-FPM), `nginx` (:8090), `node` (:4000) |
+| Infra | Docker Compose: `valkey`, `php` (PHP-FPM), `nginx` (:8080), `node` (:4000) |
 
 ## Struktur repo
 
@@ -125,9 +125,9 @@ docker compose exec php php spark migrate
 docker compose exec php php spark db:seed RolePermissionSeeder
 ```
 
-- API: `http://localhost:8090/api` (via nginx → `public/`)
+- API: `http://127.0.0.1:8080/api` (via nginx → `public/`)
 - Socket.IO: `http://localhost:4000` (`GET /health` untuk cek)
-- Web Admin: `http://localhost:8090/login` (root `/` = dashboard, tanpa prefix `/admin`)
+- Web Admin: `http://127.0.0.1:8080/login` (root `/` = dashboard, tanpa prefix `/admin`)
 
 Tanpa Docker (dev lokal):
 

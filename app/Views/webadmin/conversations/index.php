@@ -72,14 +72,17 @@
 var conversationsTable;
 
 $(document).ready(function() {
-    initConversationsTable();
+    // Tunggu auth siap agar request pertama selalu pakai token valid
+    window.AdminApp.ready.then(function() {
+        initConversationsTable();
 
-    $('#tableSearch').on('keyup', debounce(function() {
-        conversationsTable.search(this.value).draw();
-    }, 300));
+        $('#tableSearch').on('keyup', debounce(function() {
+            conversationsTable.search(this.value).draw();
+        }, 300));
 
-    $('#filterType').on('change', function() {
-        conversationsTable.column(2).search(this.value).draw();
+        $('#filterType').on('change', function() {
+            conversationsTable.column(2).search(this.value).draw();
+        });
     });
 });
 

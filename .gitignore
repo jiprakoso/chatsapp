@@ -88,6 +88,8 @@ php_errors.log
 # Composer
 #-------------------------
 vendor/
+# Kecuali vendor web (Tabler dkk milik sendiri, dipakai layout admin)
+!public/assets/vendor/
 
 #-------------------------
 # IDE / Development Files
