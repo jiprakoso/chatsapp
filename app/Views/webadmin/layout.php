@@ -288,21 +288,6 @@
     </div>
     <!--end::App-->
     
-    <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
-    <link href="<?= base_url('assets/plugins/global/plugins.bundle.css') ?>" rel="stylesheet" type="text/css"/>
-    <link href="<?= base_url('assets/css/style.bundle.css') ?>" rel="stylesheet" type="text/css"/>
-    <link href="<?= base_url('assets/plugins/custom/datatables/datatables.bundle.css') ?>" rel="stylesheet" type="text/css"/>
-    <!--end::Global Stylesheets Bundle-->
-    
-    <!-- Page-specific CSS -->
-    <?= $this->renderSection('pageStyles') ?>
-    
-    <script>
-        var baseUrl = '<?= base_url() ?>';
-        var csrfToken = '<?= csrf_hash() ?>';
-        var csrfName = '<?= csrf_token() ?>';
-    </script>
-    
     <!--begin::Global JS(mandatory for all pages)-->
     <script src="<?= base_url('assets/plugins/global/plugins.bundle.js') ?>"></script>
     <script src="<?= base_url('assets/js/scripts.bundle.js') ?>"></script>

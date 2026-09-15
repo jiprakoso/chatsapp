@@ -12,11 +12,10 @@
     
     function checkAuth() {
         var token = localStorage.getItem('admin_token');
-        var publicPaths = ['/login', '/register'];
         var currentPath = window.location.pathname;
-        
-        // Skip auth check for public paths
-        if (publicPaths.some(p => currentPath.startsWith(p))) {
+
+        // Halaman login tidak perlu token
+        if (currentPath.startsWith('/admin/login')) {
             return;
         }
         
@@ -58,8 +57,8 @@
     }
     
     function redirectToLogin() {
-        if (window.location.pathname !== baseUrl + 'login') {
-            window.location.href = baseUrl + 'login';
+        if (!window.location.pathname.startsWith('/admin/login')) {
+            window.location.href = baseUrl + 'admin/login';
         }
     }
     
@@ -98,7 +97,7 @@
     function logout() {
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
-        window.location.href = baseUrl + 'login';
+        window.location.href = baseUrl + 'admin/login';
     }
     
     // Expose globally

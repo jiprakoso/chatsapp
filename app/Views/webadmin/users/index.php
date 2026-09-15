@@ -156,9 +156,13 @@ $(document).ready(function() {
         usersTable.search(this.value).draw();
     }, 300));
     
-    // Filters
-    $('#filterRole, #filterStatus').on('change', function() {
-        usersTable.draw();
+    // Filters (client-side: DataTables mencari teks polos di dalam badge HTML)
+    $('#filterRole').on('change', function() {
+        usersTable.column(4).search(this.value).draw();
+    });
+    $('#filterStatus').on('change', function() {
+        var map = { banned: 'Banned', active: 'Active' };
+        usersTable.column(5).search(map[this.value] || '').draw();
     });
     
     // Assign role form
@@ -175,24 +179,21 @@ $(document).ready(function() {
 function initUsersTable() {
     usersTable = $('#tableUsers').DataTable({
         processing: true,
-        serverSide: true,
+        serverSide: false,
         responsive: true,
         ajax: {
             url: baseUrl + 'api/admin/users',
             type: 'GET',
             headers: getAuthHeaders(),
-            data: function(d) {
-                d.role = $('#filterRole').val();
-                d.status = $('#filterStatus').val();
-            },
+            data: { per_page: 500 },
             dataSrc: function(json) {
-                if (json.success && json.data) {
-                    return json.data.data.map(function(item) {
+                if (json.success && json.data && Array.isArray(json.data.users)) {
+                    return json.data.users.map(function(item) {
                         return [
                             item.id,
-                            item.name,
-                            item.username || '-',
-                            item.email,
+                            escapeHtml(item.name),
+                            escapeHtml(item.username || '-'),
+                            escapeHtml(item.email),
                             formatRoles(item.roles),
                             formatStatus(item.is_banned),
                             formatDate(item.created_at),
@@ -214,7 +215,7 @@ function initUsersTable() {
             },
             error: function(xhr) {
                 if (xhr.status === 401) {
-                    window.location.href = baseUrl + 'login';
+                    window.location.href = baseUrl + 'admin/login';
                 }
                 showError('Failed to load users');
             }
@@ -385,6 +386,12 @@ function debounce(func, wait) {
             func.apply(context, args);
         }, wait);
     };
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 function getAuthHeaders() {

@@ -121,7 +121,7 @@ $(document).ready(function() {
     }, 300));
     
     $('#filterResource').on('change', function() {
-        permissionsTable.draw();
+        permissionsTable.column(2).search(this.value).draw();
     });
     
     $('#btnSavePermission').on('click', function() {
@@ -136,17 +136,14 @@ $(document).ready(function() {
 function initPermissionsTable() {
     permissionsTable = $('#tablePermissions').DataTable({
         processing: true,
-        serverSide: true,
+        serverSide: false,
         responsive: true,
         ajax: {
             url: baseUrl + 'api/admin/permissions',
             type: 'GET',
             headers: getAuthHeaders(),
-            data: function(d) {
-                d.resource = $('#filterResource').val();
-            },
             dataSrc: function(json) {
-                if (json.success && json.data) {
+                if (json.success && json.data && Array.isArray(json.data.permissions)) {
                     return json.data.permissions.map(function(item) {
                         var parts = item.name.split('.');
                         return [
@@ -170,7 +167,7 @@ function initPermissionsTable() {
                 return [];
             },
             error: function(xhr) {
-                if (xhr.status === 401) window.location.href = baseUrl + 'login';
+                if (xhr.status === 401) window.location.href = baseUrl + 'admin/login';
                 showError('Failed to load permissions');
             }
         },
@@ -198,7 +195,7 @@ function loadResources() {
         method: 'GET',
         headers: getAuthHeaders(),
         success: function(response) {
-            if (response.success && response.data) {
+            if (response.success && response.data && Array.isArray(response.data.permissions)) {
                 var resourceSet = new Set();
                 response.data.permissions.forEach(function(p) {
                     resourceSet.add(p.name.split('.')[0]);
@@ -308,8 +305,9 @@ function formatDate(dateStr) {
 }
 
 function escapeHtml(text) {
-    var map = {'&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;'};
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    if (text === null || text === undefined) return '';
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 function debounce(func, wait) {

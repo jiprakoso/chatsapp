@@ -15,18 +15,16 @@ class StatsController extends AdminBaseController
 {
     public function index()
     {
-        $userModel = new UserModel();
-        $convModel = new ConversationModel();
-        $msgModel = new MessageModel();
-        $deviceModel = new UserDeviceModel();
-        
+        // Catatan: tiap hitungan memakai instance model baru supaya
+        // kondisi WHERE tidak menumpuk antar query (countAllResults(false)
+        // tidak me-reset builder pada instance yang sama).
         $data = [
-            'total_users' => $userModel->countAllResults(false),
-            'total_conversations' => $convModel->countAllResults(false),
-            'total_messages' => $msgModel->countAllResults(false),
-            'total_devices' => $deviceModel->where('is_active', 1)->countAllResults(false),
-            'banned_users' => $userModel->where('is_banned', 1)->countAllResults(false),
-            'active_users_24h' => $userModel->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-24 hours')))->countAllResults(false),
+            'total_users'         => (new UserModel())->countAllResults(),
+            'total_conversations' => (new ConversationModel())->countAllResults(),
+            'total_messages'      => (new MessageModel())->countAllResults(),
+            'total_devices'       => (new UserDeviceModel())->where('is_active', 1)->countAllResults(),
+            'banned_users'        => (new UserModel())->where('is_banned', 1)->countAllResults(),
+            'active_users_24h'    => (new UserModel())->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-24 hours')))->countAllResults(),
         ];
         
         return $this->success($data);

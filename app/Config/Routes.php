@@ -29,7 +29,9 @@ $routes->group('api/admin', ['filter' => 'jwtauth'], static function ($routes) {
     $routes->put('roles/(:num)/permissions', 'Api\Admin\RoleController::syncPermissions/$1', ['filter' => 'permission:roles.manage']);
 
     $routes->get('permissions', 'Api\Admin\PermissionController::index', ['filter' => 'permission:permissions.manage']);
+    $routes->get('permissions/(:num)', 'Api\Admin\PermissionController::show/$1', ['filter' => 'permission:permissions.manage']);
     $routes->post('permissions', 'Api\Admin\PermissionController::create', ['filter' => 'permission:permissions.manage']);
+    $routes->put('permissions/(:num)', 'Api\Admin\PermissionController::update/$1', ['filter' => 'permission:permissions.manage']);
     $routes->delete('permissions/(:num)', 'Api\Admin\PermissionController::delete/$1', ['filter' => 'permission:permissions.manage']);
 
     $routes->get('users', 'Api\Admin\UserController::index', ['filter' => 'permission:users.view']);

@@ -79,24 +79,22 @@ $(document).ready(function() {
     }, 300));
     
     $('#filterType').on('change', function() {
-        conversationsTable.draw();
+        conversationsTable.column(2).search(this.value).draw();
     });
 });
 
 function initConversationsTable() {
     conversationsTable = $('#tableConversations').DataTable({
         processing: true,
-        serverSide: true,
+        serverSide: false,
         responsive: true,
         ajax: {
             url: baseUrl + 'api/admin/conversations',
             type: 'GET',
             headers: getAuthHeaders(),
-            data: function(d) {
-                d.type = $('#filterType').val();
-            },
+            data: { per_page: 200 },
             dataSrc: function(json) {
-                if (json.success && json.data) {
+                if (json.success && json.data && Array.isArray(json.data.data)) {
                     return json.data.data.map(function(item) {
                         var lastMsg = item.last_message_preview ? 
                             '<div class="text-muted fw-semibold text-truncate" style="max-width: 250px;">' + escapeHtml(item.last_message_preview) + '</div>' :
@@ -122,7 +120,7 @@ function initConversationsTable() {
                 return [];
             },
             error: function(xhr) {
-                if (xhr.status === 401) window.location.href = baseUrl + 'login';
+                if (xhr.status === 401) window.location.href = baseUrl + 'admin/login';
                 showError('Failed to load conversations');
             }
         },
@@ -163,8 +161,9 @@ function formatDateTime(dateStr) {
 }
 
 function escapeHtml(text) {
-    var map = {'&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;'};
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    if (text === null || text === undefined) return '';
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 function debounce(func, wait) {

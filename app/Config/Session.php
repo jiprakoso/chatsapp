@@ -12,7 +12,8 @@ class Session extends BaseConfig
     {
         parent::__construct();
 
-        $useRedis = str_contains(strtolower((string) env('SESSION_DRIVER', 'file')), 'redis');
+        $useRedis = str_contains(strtolower((string) env('SESSION_DRIVER', 'file')), 'redis')
+            && extension_loaded('redis');
 
         if ($useRedis) {
             $host = env('VALKEY_HOST', '127.0.0.1');

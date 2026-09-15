@@ -18,7 +18,19 @@ class Cache extends BaseConfig
     {
         parent::__construct();
 
-        $this->handler          = env('CACHE_HANDLER', $this->handler);
+        $handler = strtolower((string) env('CACHE_HANDLER', $this->handler));
+
+        // Fallback ke file bila ekstensi/handler yang diminta tidak tersedia
+        // (mis. CACHE_HANDLER=redis tapi phpredis belum terinstal).
+        if ($handler === 'redis' && ! extension_loaded('redis')) {
+            $handler = 'file';
+        }
+
+        if ($handler === 'predis' && ! class_exists('Predis\Client')) {
+            $handler = 'file';
+        }
+
+        $this->handler           = $handler;
         $this->redis['host']    = env('VALKEY_HOST', $this->redis['host']);
         $this->redis['port']    = (int) env('VALKEY_PORT', $this->redis['port']);
         $this->redis['database'] = 0;

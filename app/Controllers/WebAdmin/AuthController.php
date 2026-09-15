@@ -97,10 +97,10 @@ class AuthController extends BaseController
         // If remember me, set longer cookie
         if ($remember) {
             $cookie = new Cookie('admin_token', $token, [
-                'expire' => 30 * 24 * 60 * 60, // 30 days
+                'expires'  => time() + 30 * 24 * 60 * 60, // 30 days
                 'httponly' => true,
-                'secure' => $this->request->isSecure(),
-                'samesite' => 'Lax'
+                'secure'   => $this->request->isSecure(),
+                'samesite' => 'Lax',
             ]);
             $this->response->setCookie($cookie);
         }

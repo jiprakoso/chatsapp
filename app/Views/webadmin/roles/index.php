@@ -135,7 +135,8 @@ $(document).ready(function() {
     }, 300));
     
     $('#filterSystem').on('change', function() {
-        rolesTable.draw();
+        var map = { '1': 'System', '0': 'Custom' };
+        rolesTable.column(3).search(map[this.value] || '').draw();
     });
     
     $('#btnSaveRole').on('click', function() {
@@ -150,24 +151,22 @@ $(document).ready(function() {
 function initRolesTable() {
     rolesTable = $('#tableRoles').DataTable({
         processing: true,
-        serverSide: true,
+        serverSide: false,
         responsive: true,
         ajax: {
             url: baseUrl + 'api/admin/roles',
             type: 'GET',
             headers: getAuthHeaders(),
-            data: function(d) {
-                d.is_system = $('#filterSystem').val();
-            },
+            data: { per_page: 500 },
             dataSrc: function(json) {
-                if (json.success && json.data) {
+                if (json.success && json.data && Array.isArray(json.data.roles)) {
                     return json.data.roles.map(function(item) {
                         return [
                             item.id,
                             item.name,
                             item.description || '-',
                             item.is_system == 1 ? '<span class="badge badge-light-danger">System</span>' : '<span class="badge badge-light-success">Custom</span>',
-                            '<span class="badge badge-light-primary">' + item.permission_count + ' permissions</span>',
+                            '<span class="badge badge-light-primary">' + (item.permission_count || 0) + ' permissions</span>',
                             formatDate(item.created_at),
                             '<div class="d-flex gap-2 justify-content-end">' +
                                 '<button class="btn btn-icon btn-light-primary btn-sm" onclick="editRole(' + item.id + ')" title="Edit">' +
@@ -185,7 +184,7 @@ function initRolesTable() {
                 return [];
             },
             error: function(xhr) {
-                if (xhr.status === 401) window.location.href = baseUrl + 'login';
+                if (xhr.status === 401) window.location.href = baseUrl + 'admin/login';
                 showError('Failed to load roles');
             }
         },
@@ -213,7 +212,7 @@ function loadAllPermissions() {
         method: 'GET',
         headers: getAuthHeaders(),
         success: function(response) {
-            if (response.success && response.data) {
+            if (response.success && response.data && Array.isArray(response.data.permissions)) {
                 allPermissions = response.data.permissions;
             }
         }
@@ -243,8 +242,12 @@ function editRole(id) {
                 $('#roleDescription').val(role.description || '');
                 $('#roleIsSystem').prop('checked', role.is_system == 1).closest('.form-check').toggle(role.is_system != 1);
                 
-                // Build permissions tree
-                buildPermissionsTree(role.permissions || []);
+                // API mengembalikan permissions sebagai array objek;
+                // tree memakai array nama permission.
+                var selectedNames = (role.permissions || []).map(function(p) {
+                    return typeof p === 'string' ? p : p.name;
+                });
+                buildPermissionsTree(selectedNames);
                 
                 new bootstrap.Modal(document.getElementById('roleFormModal')).show();
             }
@@ -341,15 +344,48 @@ function saveRole() {
         data: JSON.stringify(data),
         success: function(response) {
             if (response.success) {
-                showSuccess(isEdit ? 'Role updated successfully' : 'Role created successfully');
-                $('#roleFormModal').modal('hide');
-                rolesTable.ajax.reload();
+                var savedRoleId = isEdit ? $('#roleId').val() : (response.data && response.data.id);
+                syncRolePermissions(savedRoleId, permissions, isEdit ? 'Role updated successfully' : 'Role created successfully');
             } else {
                 showError(response.message || 'Failed to save role');
             }
         },
         error: function(xhr) {
             showError(xhr.responseJSON?.message || 'Failed to save role');
+        }
+    });
+}
+
+function syncRolePermissions(roleId, permissionNames, successMessage) {
+    if (!roleId) {
+        showError('Role saved but ID unknown, please refresh');
+        return;
+    }
+
+    // Petakan nama permission -> id berdasarkan daftar yang sudah dimuat.
+    var nameToId = {};
+    allPermissions.forEach(function(p) { nameToId[p.name] = p.id; });
+    var permissionIds = (permissionNames || [])
+        .map(function(name) { return nameToId[name]; })
+        .filter(function(id) { return id !== undefined; });
+
+    $.ajax({
+        url: baseUrl + 'api/admin/roles/' + roleId + '/permissions',
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        contentType: 'application/json',
+        data: JSON.stringify({ permission_ids: permissionIds }),
+        success: function(syncResponse) {
+            if (syncResponse.success) {
+                showSuccess(successMessage);
+                $('#roleFormModal').modal('hide');
+                rolesTable.ajax.reload();
+            } else {
+                showError(syncResponse.message || 'Role saved, but failed to sync permissions');
+            }
+        },
+        error: function(xhr) {
+            showError(xhr.responseJSON?.message || 'Role saved, but failed to sync permissions');
         }
     });
 }
@@ -389,8 +425,9 @@ function formatDate(dateStr) {
 }
 
 function escapeHtml(text) {
-    var map = {'&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;'};
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    if (text === null || text === undefined) return '';
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 function debounce(func, wait) {

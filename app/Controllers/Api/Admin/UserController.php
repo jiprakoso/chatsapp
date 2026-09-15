@@ -12,7 +12,51 @@ class UserController extends AdminBaseController
     public function index()
     {
         $userModel = new UserModel();
-        $users     = $userModel->select('id, name, username, email, is_banned, created_at')->paginate(20);
+
+        // Filter untuk Web Admin (opsional, diabaikan bila kosong).
+        $search = trim((string) ($this->request->getGet('search') ?? ''));
+        $role   = trim((string) ($this->request->getGet('role') ?? ''));
+        $status = trim((string) ($this->request->getGet('status') ?? ''));
+
+        if ($search !== '') {
+            $userModel->groupStart()
+                ->like('name', $search)
+                ->orLike('username', $search)
+                ->orLike('email', $search)
+                ->groupEnd();
+        }
+
+        if ($status === 'banned') {
+            $userModel->where('is_banned', 1);
+        } elseif ($status === 'active') {
+            $userModel->where('is_banned', 0);
+        }
+
+        $perPage = (int) ($this->request->getGet('per_page') ?? 20);
+        $perPage = max(1, min($perPage, 500));
+
+        $users = $userModel->select('id, name, username, email, is_banned, created_at')
+            ->orderBy('id', 'DESC')
+            ->paginate($perPage);
+
+        // Sertakan nama role tiap user supaya tabel admin tidak perlu N request.
+        $userRoleModel = new UserRoleModel();
+        $roleModel     = new RoleModel();
+
+        foreach ($users as &$user) {
+            $roleIds       = $userRoleModel->roleIdsForUser((int) $user['id']);
+            $user['roles'] = $roleIds === []
+                ? []
+                : array_column($roleModel->whereIn('id', $roleIds)->findAll(), 'name');
+        }
+        unset($user);
+
+        if ($role !== '') {
+            $users = array_values(array_filter(
+                $users,
+                static fn (array $user): bool => in_array($role, $user['roles'], true)
+            ));
+        }
 
         return $this->success([
             'users'      => $users,

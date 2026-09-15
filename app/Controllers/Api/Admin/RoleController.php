@@ -13,7 +13,28 @@ class RoleController extends AdminBaseController
     public function index()
     {
         $roleModel = new RoleModel();
-        $roles     = $roleModel->paginate(20);
+
+        $search = trim((string) ($this->request->getGet('search') ?? ''));
+
+        if ($search !== '') {
+            $roleModel->groupStart()
+                ->like('name', $search)
+                ->orLike('description', $search)
+                ->groupEnd();
+        }
+
+        $perPage = (int) ($this->request->getGet('per_page') ?? 20);
+        $perPage = max(1, min($perPage, 500));
+
+        $roles = $roleModel->orderBy('id', 'ASC')->paginate($perPage);
+
+        // Hitung permission per role supaya tabel admin bisa menampilkannya.
+        $rolePermissionModel = new RolePermissionModel();
+
+        foreach ($roles as &$role) {
+            $role['permission_count'] = count($rolePermissionModel->permissionIdsForRole((int) $role['id']));
+        }
+        unset($role);
 
         return $this->success([
             'roles'      => $roles,
