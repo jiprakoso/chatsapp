@@ -69,6 +69,12 @@
                             <span class="nav-link-title">Conversations</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= base_url('chat') ?>">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-message-chatbot"></i></span>
+                            <span class="nav-link-title">Live Chat</span>
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#sidebar-system" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>

@@ -84,6 +84,8 @@ $routes->group('', ['filter' => 'webadminauth'], static function ($routes) {
     $routes->get('permissions/edit/(:num)', 'WebAdmin\PermissionsController::edit/$1');
     $routes->get('conversations', 'WebAdmin\ConversationsController::index');
     $routes->get('conversations/(:num)', 'WebAdmin\ConversationsController::view/$1');
+    $routes->get('chat', 'WebAdmin\ChatController::index');
+    $routes->get('chat/(:num)', 'WebAdmin\ChatController::room/$1');
     $routes->get('settings', 'WebAdmin\SettingsController::index');
 });
 

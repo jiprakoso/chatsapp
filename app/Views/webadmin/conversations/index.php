@@ -113,6 +113,9 @@ function initConversationsTable() {
                             lastMsg + lastSender,
                             formatDateTime(item.last_message_at),
                             '<div class="d-flex gap-1 justify-content-end">' +
+                                '<button class="btn btn-icon btn-outline-success btn-sm" onclick="openChat(' + item.id + ')" title="Open Chat">' +
+                                    '<i class="ti ti-message-chatbot"></i>' +
+                                '</button>' +
                                 '<button class="btn btn-icon btn-outline-primary btn-sm" onclick="viewConversation(' + item.id + ')" title="View">' +
                                     '<i class="ti ti-eye"></i>' +
                                 '</button>' +
@@ -143,6 +146,10 @@ function initConversationsTable() {
             zeroRecords: 'No conversations found'
         }
     });
+}
+
+function openChat(id) {
+    window.location.href = baseUrl + 'chat/' + id;
 }
 
 function viewConversation(id) {
