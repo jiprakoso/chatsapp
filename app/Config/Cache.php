@@ -14,6 +14,16 @@ use CodeIgniter\Config\BaseConfig;
 
 class Cache extends BaseConfig
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->handler          = env('CACHE_HANDLER', $this->handler);
+        $this->redis['host']    = env('VALKEY_HOST', $this->redis['host']);
+        $this->redis['port']    = (int) env('VALKEY_PORT', $this->redis['port']);
+        $this->redis['database'] = 0;
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Primary Handler
@@ -33,7 +43,7 @@ class Cache extends BaseConfig
      * unreachable. Often, 'file' is used here since the filesystem is
      * always available, though that's not always practical for the app.
      */
-    public string $backupHandler = 'dummy';
+    public string $backupHandler = 'file';
 
     /**
      * --------------------------------------------------------------------------
@@ -128,7 +138,7 @@ class Cache extends BaseConfig
         'password'   => null,
         'port'       => 6379,
         'timeout'    => 0,
-        'async'      => false, // specific to Predis and ignored by the native Redis extension
+        'async'      => false,
         'persistent' => false,
         'database'   => 0,
     ];

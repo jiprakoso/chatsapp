@@ -11,7 +11,7 @@
                 </div>
                 <div>
                     <button type="button" class="btn btn-primary" onclick="openCreateRole()">
-                        <i class="ki-duotone ki-plus fs-2 me-2"></i>Create Role
+                        <i class="ki-duotone ki-plus-square fs-2 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>Create Role
                     </button>
                 </div>
             </div>
@@ -171,11 +171,11 @@ function initRolesTable() {
                             formatDate(item.created_at),
                             '<div class="d-flex gap-2 justify-content-end">' +
                                 '<button class="btn btn-icon btn-light-primary btn-sm" onclick="editRole(' + item.id + ')" title="Edit">' +
-                                    '<i class="ki-duotone ki-pencil fs-3"></i>' +
+                                    '<i class="ki-duotone ki-pencil fs-3"><span class="path1"></span><span class="path2"></span></i>' +
                                 '</button>' +
                                 (item.is_system != 1 ? 
                                     '<button class="btn btn-icon btn-light-danger btn-sm" onclick="openDeleteRole(' + item.id + ', \'' + escapeHtml(item.name) + '\')" title="Delete">' +
-                                        '<i class="ki-duotone ki-trash fs-3"></i>' +
+                                        '<i class="ki-duotone ki-trash fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>' +
                                     '</button>' : ''
                                 ) +
                             '</div>'

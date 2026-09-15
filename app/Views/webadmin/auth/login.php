@@ -20,8 +20,8 @@
         <div class="d-flex flex-center flex-column flex-column-fluid">
             <!-- Logo -->
             <a href="<?= base_url('admin') ?>" class="mb-10">
-                <img alt="Logo" src="<?= base_url('assets/media/logos/logo-dark.png') ?>" class="h-50px theme-light-show"/>
-                <img alt="Logo" src="<?= base_url('assets/media/logos/logo-light.png') ?>" class="h-50px theme-dark-show"/>
+                <img alt="Logo" src="<?= base_url('assets/media/logos/default.svg') ?>" class="h-50px theme-light-show"/>
+                <img alt="Logo" src="<?= base_url('assets/media/logos/default-dark.svg') ?>" class="h-50px theme-dark-show"/>
             </a>
             
             <!-- Card -->
@@ -32,9 +32,10 @@
                     
                     <form id="loginForm" class="fv-plugins-bootstrap5 fv-plugins-framework">
                         <div class="fv-row mb-8">
-                            <label class="form-label fw-semibold fs-6">Email</label>
-                            <input type="email" name="email" id="email" class="form-control form-control-lg form-control-solid" placeholder="admin@chatsapp.local" autocomplete="email" required>
+                            <label class="form-label fw-semibold fs-6">Username or Email</label>
+                            <input type="text" name="username_or_email" id="username_or_email" class="form-control form-control-lg form-control-solid" placeholder="admin@chatsapp.local" autocomplete="username" required>
                         </div>
+                        
                         
                         <div class="fv-row mb-5">
                             <div class="d-flex flex-stack">
@@ -44,7 +45,7 @@
                             <div class="input-group mt-2">
                                 <input type="password" name="password" id="password" class="form-control form-control-lg form-control-solid" placeholder="Enter password" autocomplete="current-password" required>
                                 <button type="button" class="btn btn-icon btn-flex btn-active-light-primary" onclick="togglePassword('password')">
-                                    <i class="ki-duotone ki-eye fs-3" id="passwordIcon"></i>
+                                    <i class="ki-duotone ki-eye fs-3" id="passwordIcon"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
                                 </button>
                             </div>
                         </div>
@@ -85,7 +86,7 @@
             btn.addClass('loading').prop('disabled', true);
             
             var formData = {
-                email: $('#email').val(),
+                username_or_email: $('#username_or_email').val(),
                 password: $('#password').val(),
                 remember: $('#remember').is(':checked') ? '1' : ''
             };

@@ -22,19 +22,19 @@ class AuthController extends BaseController
     
     public function loginPost()
     {
-        $email = $this->request->getPost('email');
+        $username_or_email = $this->request->getPost('username_or_email');
         $password = $this->request->getPost('password');
         $remember = $this->request->getPost('remember');
         
-        if (!$email || !$password) {
+        if (!$username_or_email || !$password) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Email and password are required'
+                'message' => 'Username or email and password are required'
             ])->setStatusCode(422);
         }
         
         $userModel = new UserModel();
-        $user = $userModel->findByLogin($email);
+        $user = $userModel->findByLogin($username_or_email);
         
         if (!$user || !password_verify($password, $user['password_hash'])) {
             return $this->response->setJSON([
@@ -96,11 +96,10 @@ class AuthController extends BaseController
         
         // If remember me, set longer cookie
         if ($remember) {
-            $isSecure = $this->request->isSecure();
             $cookie = new Cookie('admin_token', $token, [
                 'expire' => 30 * 24 * 60 * 60, // 30 days
                 'httponly' => true,
-                'secure' => $isSecure,
+                'secure' => $this->request->isSecure(),
                 'samesite' => 'Lax'
             ]);
             $this->response->setCookie($cookie);

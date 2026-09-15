@@ -24,16 +24,13 @@ export async function notifyNewMessage(conversationId, message, senderId, token)
   }
 
   try {
-    const membersRes = await ci4Request(token, 'GET', `/conversations/${conversationId}/members`);
-    const memberIds = membersRes.data.members.map(m => m.user_id).filter(id => id !== senderId);
+    const conversationRes = await ci4Request(token, 'GET', `/conversations/${conversationId}`);
+    const memberIds = conversationRes.data.members.map(m => m.id).filter(id => id !== senderId);
 
     if (memberIds.length === 0) return;
 
-    const onlineUserIds = new Set();
-    const { onlineUsers } = await import('../socket/presence.js');
-    onlineUsers.forEach((_, userId) => onlineUserIds.add(userId));
-
-    const offlineMemberIds = memberIds.filter(id => !onlineUserIds.has(id));
+    const { isOnline } = await import('../socket/presence.js');
+    const offlineMemberIds = memberIds.filter(id => !isOnline(id));
 
     if (offlineMemberIds.length === 0) return;
 

@@ -8,6 +8,21 @@ use CodeIgniter\Session\Handlers\FileHandler;
 
 class Session extends BaseConfig
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        $useRedis = str_contains(strtolower((string) env('SESSION_DRIVER', 'file')), 'redis');
+
+        if ($useRedis) {
+            $host = env('VALKEY_HOST', '127.0.0.1');
+            $port = env('VALKEY_PORT', 6379);
+
+            $this->driver   = \CodeIgniter\Session\Handlers\RedisHandler::class;
+            $this->savePath = "tcp://{$host}:{$port}?database=1";
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Session Driver
@@ -55,6 +70,8 @@ class Session extends BaseConfig
      *
      * For the 'database' driver, it's a table name.
      * Please read up the manual for the format with other session drivers.
+     *
+     * For the 'redis' driver, use tcp://host:port?database=X format.
      *
      * IMPORTANT: You are REQUIRED to set a valid save path!
      */

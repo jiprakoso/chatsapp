@@ -11,7 +11,7 @@
                 </div>
                 <div>
                     <button type="button" class="btn btn-primary" data-kt-menu="true" data-kt-menu-placement="bottom-end" data-kt-menu-trigger="click">
-                        <i class="ki-duotone ki-plus fs-2 me-2"></i>Actions
+                        <i class="ki-duotone ki-plus-square fs-2 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>Actions
                     </button>
                 </div>
             </div>
@@ -198,13 +198,13 @@ function initUsersTable() {
                             formatDate(item.created_at),
                             '<div class="d-flex gap-2 justify-content-end">' +
                                 '<button class="btn btn-icon btn-light-primary btn-sm" onclick="viewUser(' + item.id + ')" title="View">' +
-                                    '<i class="ki-duotone ki-eye fs-3"></i>' +
+                                    '<i class="ki-duotone ki-eye fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>' +
                                 '</button>' +
                                 '<button class="btn btn-icon btn-light-primary btn-sm" onclick="openAssignRole(' + item.id + ')" title="Assign Role">' +
-                                    '<i class="ki-duotone ki-shield fs-3"></i>' +
+                                    '<i class="ki-duotone ki-shield fs-3"><span class="path1"></span><span class="path2"></span></i>' +
                                 '</button>' +
                                 '<button class="btn btn-icon btn-light-' + (item.is_banned ? 'success' : 'danger') + ' btn-sm" onclick="openBanModal(' + item.id + ', ' + (item.is_banned ? 'true' : 'false') + ')" title="' + (item.is_banned ? 'Unban' : 'Ban') + '">' +
-                                    '<i class="ki-duotone ki-' + (item.is_banned ? 'lock-open' : 'lock') + ' fs-3"></i>' +
+                                    '<i class="ki-duotone ki-' + (item.is_banned ? 'shield-tick' : 'lock') + ' fs-3">' + (item.is_banned ? '<span class="path1"></span><span class="path2"></span>' : '<span class="path1"></span><span class="path2"></span><span class="path3"></span>') + '</i>' +
                                 '</button>' +
                             '</div>'
                         ];

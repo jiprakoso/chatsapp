@@ -26,7 +26,7 @@
                                 <div class="input-group">
                                     <input type="password" name="jwt_secret" id="jwtSecret" class="form-control form-control-solid" value="<?= esc(env('JWT_SECRET')) ?>" readonly>
                                     <button type="button" class="btn btn-light-secondary" onclick="togglePassword('jwtSecret')">
-                                        <i class="ki-duotone ki-eye fs-3" id="jwtSecretIcon"></i>
+                                        <i class="ki-duotone ki-eye fs-3" id="jwtSecretIcon"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
                                     </button>
                                 </div>
                                 <div class="form-text">Set in .env file (JWT_SECRET). Changing requires restart.</div>
@@ -56,7 +56,7 @@
                                 <div class="input-group">
                                     <input type="password" name="internal_api_key" id="internalApiKey" class="form-control form-control-solid" value="<?= esc(env('INTERNAL_API_KEY')) ?>" readonly>
                                     <button type="button" class="btn btn-light-secondary" onclick="togglePassword('internalApiKey')">
-                                        <i class="ki-duotone ki-eye fs-3" id="internalApiKeyIcon"></i>
+                                        <i class="ki-duotone ki-eye fs-3" id="internalApiKeyIcon"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
                                     </button>
                                 </div>
                                 <div class="form-text">Used by Node Socket.IO server to call internal endpoints. Set in .env (INTERNAL_API_KEY).</div>
@@ -83,7 +83,7 @@
                             </div>
                         </div>
                         <div class="alert alert-info">
-                            <i class="ki-duotone ki-info-circle fs-3 me-2"></i>
+                            <i class="ki-duotone ki-information-2 fs-3 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                             <div>
                                 <strong>FCM Configuration:</strong> FCM is configured in the Node.js Socket.IO server (<code>socket-server/</code>). 
                                 The service account JSON must be placed at the path specified above. Generate it from Firebase Console > Project Settings > Service Accounts.
@@ -106,7 +106,7 @@
                             <div class="card card-bordered h-100">
                                 <div class="card-body text-center py-8">
                                     <div class="symbol symbol-60px symbol-circle symbol-light-primary mb-4 mx-auto">
-                                        <i class="ki-duotone ki-image fs-1"></i>
+                                        <i class="ki-duotone ki-picture fs-1"><span class="path1"></span><span class="path2"></span></i>
                                     </div>
                                     <h5 class="fw-bold">Max Image Size</h5>
                                     <div class="fs-2hx fw-bolder text-gray-900">20 MB</div>
@@ -118,7 +118,7 @@
                             <div class="card card-bordered h-100">
                                 <div class="card-body text-center py-8">
                                     <div class="symbol symbol-60px symbol-circle symbol-light-success mb-4 mx-auto">
-                                        <i class="ki-duotone ki-video fs-1"></i>
+                                        <i class="ki-duotone ki-monitor-mobile fs-1"><span class="path1"></span><span class="path2"></span></i>
                                     </div>
                                     <h5 class="fw-bold">Max Video Size</h5>
                                     <div class="fs-2hx fw-bolder text-gray-900">20 MB</div>
@@ -130,7 +130,7 @@
                             <div class="card card-bordered h-100">
                                 <div class="card-body text-center py-8">
                                     <div class="symbol symbol-60px symbol-circle symbol-light-warning mb-4 mx-auto">
-                                        <i class="ki-duotone ki-file fs-1"></i>
+                                        <i class="ki-duotone ki-file fs-1"><span class="path1"></span><span class="path2"></span></i>
                                     </div>
                                     <h5 class="fw-bold">Max Document Size</h5>
                                     <div class="fs-2hx fw-bolder text-gray-900">20 MB</div>
@@ -140,7 +140,7 @@
                         </div>
                     </div>
                     <div class="alert alert-warning">
-                        <i class="ki-duotone ki-alert-circle fs-3 me-2"></i>
+                        <i class="ki-duotone ki-information-2 fs-3 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                         <div>
                             <strong>PHP Configuration Required:</strong> Ensure <code>upload_max_filesize</code> and <code>post_max_size</code> in your <code>php.ini</code> are set to at least <code>20M</code> (or higher) for these limits to work.
                         </div>
@@ -160,7 +160,7 @@
                         <div class="col-md-4">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="symbol symbol-45px symbol-circle symbol-light-primary">
-                                    <i class="ki-duotone ki-database fs-2"></i>
+                                    <i class="ki-duotone ki-data fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Driver</div>
@@ -171,7 +171,7 @@
                         <div class="col-md-4">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="symbol symbol-45px symbol-circle symbol-light-success">
-                                    <i class="ki-duotone ki-server fs-2"></i>
+                                    <i class="ki-duotone ki-router fs-2"><span class="path1"></span><span class="path2"></span></i>
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Host</div>
@@ -182,7 +182,7 @@
                         <div class="col-md-4">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="symbol symbol-45px symbol-circle symbol-light-info">
-                                    <i class="ki-duotone ki-folder fs-2"></i>
+                                    <i class="ki-duotone ki-folder fs-2"><span class="path1"></span><span class="path2"></span></i>
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Database</div>
@@ -204,13 +204,13 @@
                 <div class="card-body pt-0">
                     <div class="d-flex flex-wrap gap-3">
                         <button type="button" class="btn btn-light-primary" onclick="clearCache()">
-                            <i class="ki-duotone ki-trash fs-3 me-2"></i>Clear Cache
+                            <i class="ki-duotone ki-trash fs-3 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>Clear Cache
                         </button>
                         <button type="button" class="btn btn-light-warning" onclick="runMigrations()">
-                            <i class="ki-duotone ki-database fs-3 me-2"></i>Run Migrations
+                            <i class="ki-duotone ki-data fs-3 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>Run Migrations
                         </button>
                         <button type="button" class="btn btn-light-danger" onclick="runSeeder()">
-                            <i class="ki-duotone ki-seed fs-3 me-2"></i>Run RBAC Seeder
+                            <i class="ki-duotone ki-flask fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Run RBAC Seeder
                         </button>
                     </div>
                 </div>

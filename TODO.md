@@ -89,6 +89,50 @@
 ### Documentation
 - [x] references.md fully synced (Sections 1-34, 28 RBAC, 23.1 FCM impl, 30 Node structure)
 
+### Web Admin UI (CI4 + Metronic 8.2.9)
+- [x] **Layout & Auth**
+  - [x] Metronic 8.2.9 assets in `public/assets/`
+  - [x] Layout: header, sidebar (navigation), footer
+  - [x] Login page with session auth + JWT for API
+  - [x] WebAdminAuthFilter (session-based, redirects to login)
+  - [x] Logout with session cleanup
+
+- [x] **Dashboard**
+  - [x] Stats cards (users, conversations, messages, devices) via API
+  - [x] Recent activity table (users, conversations, messages)
+  - [x] System status indicators (API, Socket, DB, FCM)
+
+- [x] **Users Management**
+  - [x] DataTables server-side (search, filter by role/status, pagination)
+  - [x] View user modal (details, roles, devices)
+  - [x] Assign role modal (dropdown from API)
+  - [x] Ban/unban modal with reason
+  - [x] All via jQuery AJAX (no form submit)
+
+- [x] **Roles Management**
+  - [x] DataTables server-side
+  - [x] Create/Edit modal with permissions tree (grouped by resource)
+  - [x] Resource checkbox selects all actions
+  - [x] System role protection (cannot delete, name locked)
+  - [x] Sync permissions via API
+
+- [x] **Permissions Management**
+  - [x] DataTables server-side with resource filter
+  - [x] Create/Edit modal (name format: resource.action)
+  - [x] Delete with confirmation
+
+- [x] **Conversations Management**
+  - [x] DataTables server-side (search, filter by type)
+  - [x] Detail modal: members (role, join/leave dates) + messages (type, content, status)
+
+- [x] **Settings**
+  - [x] JWT config (secret, TTL)
+  - [x] Internal API key
+  - [x] FCM service account path
+  - [x] Upload limits (images/videos/docs: 20MB)
+  - [x] Database info (driver, host, name)
+  - [x] System actions (clear cache, run migrations, run seeder)
+
 ---
 
 ## 🔄 In Progress / Next Up
@@ -109,22 +153,22 @@
 - [ ] Push notification handling (background/terminated)
 
 ### Web Admin UI (CI4 + Metronic)
-- [ ] Add Metronic HTML 8.2.9 assets to `public/assets/`
-- [ ] Create CI4 view layout (header, sidebar, footer) using Metronic partials
-- [ ] Auth pages: login, register, forgot password (Metronic auth templates)
-- [ ] Dashboard: conversation stats, user stats, message volume
-- [ ] User management: list, search, view, ban/unban, assign role
-- [ ] Role/Permission management: CRUD roles, sync permissions matrix
-- [ ] Conversation management: list, view messages, moderate (delete)
-- [ ] Message moderation: view reported/flagged messages
-- [ ] System settings: JWT secret rotation, FCM config, upload limits
-- [ ] AJAX/API integration with existing CI4 admin endpoints
-- [ ] CSRF protection for forms
-- [ ] Responsive layout (desktop + mobile)
-- [ ] Dark/light theme toggle (Metronic supports this)
+- [x] Add Metronic HTML 8.2.9 assets to `public/assets/`
+- [x] Create CI4 view layout (header, sidebar, footer) using Metronic partials
+- [x] Auth pages: login (Metronic auth template)
+- [x] Dashboard: stats cards, recent activity, system status
+- [x] User management: DataTables server-side, search/filter/pagination, view modal, assign role, ban/unban
+- [x] Role/Permission management: CRUD roles, permissions tree grouped by resource, sync permissions
+- [x] Conversation management: DataTables server-side, detail modal with members & messages
+- [x] System settings: JWT, Internal API, FCM, Upload limits, DB info, system actions
+- [x] AJAX/API integration with existing CI4 admin endpoints (jQuery AJAX)
+- [x] WebAdminAuthFilter for session-based authentication
+- [x] Responsive layout (desktop + mobile)
+- [x] Dark/light theme toggle (Metronic supports this)
 
 ### Scalability / Production Hardening
-- [ ] Redis for Socket.IO multi-instance (presence, room adapter)
+- [x] **Valkey for CI4 cache & session** - docker-compose.yml provisions Valkey; `Cache.php`/`Session.php` now read `CACHE_HANDLER`/`SESSION_DRIVER`/`VALKEY_HOST`/`VALKEY_PORT` from env and actually connect (verified: sessions land in db1, permission cache in db0)
+- [ ] Valkey for Socket.IO multi-instance (presence + room adapter in Node) - not started, presence.js is still single-instance in-memory
 - [ ] CI4 rate limiting (login, register, send_message)
 - [ ] CI4 request validation middleware (global)
 - [ ] Structured logging (Monolog + Loki/ELK)
@@ -155,7 +199,7 @@
 ## 🐛 Known Issues / Tech Debt
 - [ ] CI4 `forcehttps` filter requires HTTPS in production (configure properly)
 - [ ] PHP `upload_max_filesize` / `post_max_size` must be ≥20MB in production php.ini
-- [ ] Socket.IO presence is single-instance in-memory (needs Redis for horizontal scaling)
+- [ ] Socket.IO presence is single-instance in-memory (Valkey is running and reachable from Node, but no `@socket.io/redis-adapter`/`ioredis` wiring yet)
 - [ ] No automated test suite yet (manual e2e only)
 - [ ] FCM service account JSON not in repo (correct, but needs deployment docs)
 - [ ] No database migration rollback testing in CI
@@ -167,3 +211,4 @@
 - Architecture: CI4 = source of truth (DB, business logic, auth), Node = realtime transport + presence + FCM sender
 - Flutter will use same REST API for initial load/sync, Socket.IO for realtime, FCM for push
 - Internal API key separates service-to-service from user auth
+- **Valkey (Redis-compatible)** actually wired for CI4 cache & session (database 0 & 1, verified via docker compose); Socket.IO Redis adapter for multi-instance presence/rooms is NOT built yet

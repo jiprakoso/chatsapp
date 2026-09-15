@@ -1,18 +1,41 @@
 services:
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: chatsapp-valkey
+    command: valkey-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - valkey_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   php:
-    image: ci4-php82-fpm:8.2
-    container_name: adms-local-php
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+    container_name: chatsapp-php
     network_mode: host
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
       - ./docker/php-fpm-pool.conf:/usr/local/etc/php-fpm.d/zz-pool.conf:ro
       - ./docker/run:/var/run/php
+    environment:
+      - VALKEY_HOST=127.0.0.1
+      - VALKEY_PORT=6379
+    depends_on:
+      valkey:
+        condition: service_healthy
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
-    container_name: adms-local-nginx
+    container_name: chatsapp-nginx
     depends_on:
       - php
     ports:
@@ -25,21 +48,23 @@ services:
 
   node:
     image: node:20-alpine
-    container_name: adms-local-node
+    container_name: chatsapp-node
     working_dir: /usr/src/app
     volumes:
       - ./socket-server:/usr/src/app
-    # socket-server/.env tidak ada di git (lihat socket-server/.env.example) —
-    # buat dulu dari contohnya sebelum `docker compose up`. JWT_SECRET di file
-    # itu HARUS sama persis dengan JWT_SECRET di .env root (CI4), dan
-    # CI4_API_BASE_URL harus http://nginx/api (nginx dijangkau lewat nama
-    # service di default bridge network compose ini, php pakai network_mode:
-    # host jadi tidak bisa dituju lewat nama service).
     env_file:
       - ./socket-server/.env
+    environment:
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
+      - CI4_API_BASE_URL=http://nginx/api
     command: sh -c "npm install --omit=dev && node src/server.js"
     ports:
       - "4000:4000"
     depends_on:
       - nginx
+      - valkey
     restart: unless-stopped
+
+volumes:
+  valkey_data:

@@ -22,7 +22,7 @@
                                     <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statUsers">-</h2>
                                 </div>
                                 <div class="symbol symbol-60px symbol-circle symbol-light-primary">
-                                    <i class="ki-duotone ki-users fs-1"><span class="path1"></span><span class="path2"></span></i>
+                                    <i class="ki-duotone ki-people fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
                                 </div>
                             </div>
                         </div>
@@ -37,7 +37,7 @@
                                     <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statConversations">-</h2>
                                 </div>
                                 <div class="symbol symbol-60px symbol-circle symbol-light-success">
-                                    <i class="ki-duotone ki-chat fs-1"><span class="path1"></span><span class="path2"></span></i>
+                                    <i class="ki-duotone ki-messages fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
                                 </div>
                             </div>
                         </div>
@@ -52,7 +52,7 @@
                                     <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statMessages">-</h2>
                                 </div>
                                 <div class="symbol symbol-60px symbol-circle symbol-light-warning">
-                                    <i class="ki-duotone ki-message fs-1"><span class="path1"></span><span class="path2"></span></i>
+                                    <i class="ki-duotone ki-message-text-2 fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                                 </div>
                             </div>
                         </div>
@@ -67,7 +67,7 @@
                                     <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statDevices">-</h2>
                                 </div>
                                 <div class="symbol symbol-60px symbol-circle symbol-light-danger">
-                                    <i class="ki-duotone ki-device-mobile fs-1"><span class="path1"></span><span class="path2"></span></i>
+                                    <i class="ki-duotone ki-devices fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
                                 </div>
                             </div>
                         </div>

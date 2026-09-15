@@ -113,7 +113,7 @@ function initConversationsTable() {
                             formatDateTime(item.last_message_at),
                             '<div class="d-flex gap-2 justify-content-end">' +
                                 '<button class="btn btn-icon btn-light-primary btn-sm" onclick="viewConversation(' + item.id + ')" title="View">' +
-                                    '<i class="ki-duotone ki-eye fs-3"></i>' +
+                                    '<i class="ki-duotone ki-eye fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>' +
                                 '</button>' +
                             '</div>'
                         ];
