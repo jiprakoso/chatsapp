@@ -4,26 +4,39 @@ import { CI4_API_BASE_URL, INTERNAL_API_KEY } from '../config/env.js';
 import { ci4Request } from './httpClient.js';
 
 let messaging = null;
+let fcmDisabled = false;
 
 function initFirebase() {
-  if (getApps().length === 0) {
-    const saPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-    if (!saPath) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT_PATH not set in env');
+  if (fcmDisabled) return false;
+
+  try {
+    if (getApps().length === 0) {
+      const saPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+      if (!saPath) {
+        console.warn('[notificationService] FCM disabled: FIREBASE_SERVICE_ACCOUNT_PATH not set in env');
+        fcmDisabled = true;
+        return false;
+      }
+      initializeApp({
+        credential: cert(saPath),
+      });
     }
-    initializeApp({
-      credential: cert(saPath),
-    });
+    messaging = getMessaging();
+    return true;
+  } catch (err) {
+    // Service account hilang/rusak tidak boleh men-crash server socket —
+    // pesan tetap terkirim realtime, hanya push notification yang dilewati.
+    console.warn('[notificationService] FCM disabled:', err.message);
+    fcmDisabled = true;
+    return false;
   }
-  messaging = getMessaging();
 }
 
 export async function notifyNewMessage(conversationId, message, senderId, token) {
-  if (!messaging) {
-    initFirebase();
-  }
-
   try {
+    if (!messaging && !initFirebase()) {
+      return;
+    }
     const conversationRes = await ci4Request(token, 'GET', `/conversations/${conversationId}`);
     const memberIds = conversationRes.data.members.map(m => m.id).filter(id => id !== senderId);
 

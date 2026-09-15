@@ -1,112 +1,105 @@
 <?= $this->extend('webadmin/layout') ?>
 
 <?= $this->section('content') ?>
-<div class="d-flex flex-column flex-lg-row">
-    <div class="flex-lg-row-fluid">
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-stack mb-10">
-                <div>
-                    <h1 class="text-gray-900 fw-bolder fs-2hx">Users</h1>
-                    <div class="fw-semibold fs-6 text-muted mt-2">Manage application users</div>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-primary" data-kt-menu="true" data-kt-menu-placement="bottom-end" data-kt-menu-trigger="click">
-                        <i class="ki-duotone ki-plus-square fs-2 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>Actions
-                    </button>
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">Users</h2>
+                <div class="text-secondary mt-1">Manage application users</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="page-body">
+    <div class="container-xl">
+        <div class="card">
+            <div class="card-header">
+                <div class="row g-2 align-items-center w-100">
+                    <div class="col-md-4">
+                        <div class="input-icon">
+                            <span class="input-icon-addon"><i class="ti ti-search"></i></span>
+                            <input type="text" id="tableSearch" class="form-control" placeholder="Search users...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filterRole" class="form-select">
+                            <option value="">All Roles</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="user">User</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filterStatus" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Table -->
-            <div class="card card-flush">
-                <div class="card-header border-0 pt-5">
-                    <div class="d-flex flex-wrap gap-3 mb-5">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="fw-semibold fs-6 mb-0">Search:</label>
-                            <input type="text" id="tableSearch" class="form-control form-control-solid w-250px" placeholder="Search users...">
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="fw-semibold fs-6 mb-0">Role:</label>
-                            <select id="filterRole" class="form-select form-select-solid w-200px">
-                                <option value="">All Roles</option>
-                                <option value="super_admin">Super Admin</option>
-                                <option value="admin">Admin</option>
-                                <option value="moderator">Moderator</option>
-                                <option value="user">User</option>
-                            </select>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="fw-semibold fs-6 mb-0">Status:</label>
-                            <select id="filterStatus" class="form-select form-select-solid w-180px">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="banned">Banned</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-row-gray-100 align-middle gs-0 gy-4" id="tableUsers">
-                            <thead>
-                                <tr class="text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                                    <th class="min-w-100px">ID</th>
-                                    <th>Name</th>
-                                    <th>Username</th>
-                                    <th>Email</th>
-                                    <th>Roles</th>
-                                    <th class="min-w-120px">Status</th>
-                                    <th class="min-w-150px">Registered</th>
-                                    <th class="text-end min-w-150px">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table" id="tableUsers">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Roles</th>
+                            <th>Status</th>
+                            <th>Registered</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
 <!-- User Details Modal -->
-<div class="modal fade" id="userDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered mw-650px">
+<div class="modal modal-blur fade" id="userDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">User Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="userDetailContent">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Assign Role Modal -->
-<div class="modal fade" id="assignRoleModal" tabindex="-1" aria-hidden="true">
+<div class="modal modal-blur fade" id="assignRoleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Role</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="assignRoleForm">
                     <input type="hidden" name="user_id" id="assignRoleUserId">
-                    <div class="mb-5">
-                        <label class="form-label fw-semibold">Role</label>
-                        <select name="role_id" id="assignRoleSelect" class="form-select form-select-solid" required>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role_id" id="assignRoleSelect" class="form-select" required>
                             <option value="">Select role...</option>
                         </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="btnSaveAssignRole">Assign</button>
             </div>
         </div>
@@ -114,20 +107,20 @@
 </div>
 
 <!-- Ban/Unban Modal -->
-<div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
+<div class="modal modal-blur fade" id="banModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="banModalTitle">Ban User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="banForm">
                     <input type="hidden" name="user_id" id="banUserId">
                     <input type="hidden" name="action" id="banAction">
-                    <div class="mb-5" id="banReasonGroup">
-                        <label class="form-label fw-semibold">Reason</label>
-                        <textarea name="reason" class="form-control form-control-solid" rows="3" placeholder="Enter ban reason..."></textarea>
+                    <div class="mb-3" id="banReasonGroup">
+                        <label class="form-label">Reason</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Enter ban reason..."></textarea>
                     </div>
                     <div class="alert alert-warning" id="banWarning" style="display: none;">
                         This will prevent the user from logging in.
@@ -135,7 +128,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="btnConfirmBan">Confirm</button>
             </div>
         </div>
@@ -150,12 +143,12 @@ var usersTable;
 $(document).ready(function() {
     initUsersTable();
     loadRolesForSelect();
-    
+
     // Search input
     $('#tableSearch').on('keyup', debounce(function() {
         usersTable.search(this.value).draw();
     }, 300));
-    
+
     // Filters (client-side: DataTables mencari teks polos di dalam badge HTML)
     $('#filterRole').on('change', function() {
         usersTable.column(4).search(this.value).draw();
@@ -164,12 +157,12 @@ $(document).ready(function() {
         var map = { banned: 'Banned', active: 'Active' };
         usersTable.column(5).search(map[this.value] || '').draw();
     });
-    
+
     // Assign role form
     $('#btnSaveAssignRole').on('click', function() {
         saveAssignRole();
     });
-    
+
     // Ban/Unban
     $('#btnConfirmBan').on('click', function() {
         confirmBanUnban();
@@ -197,15 +190,15 @@ function initUsersTable() {
                             formatRoles(item.roles),
                             formatStatus(item.is_banned),
                             formatDate(item.created_at),
-                            '<div class="d-flex gap-2 justify-content-end">' +
-                                '<button class="btn btn-icon btn-light-primary btn-sm" onclick="viewUser(' + item.id + ')" title="View">' +
-                                    '<i class="ki-duotone ki-eye fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>' +
+                            '<div class="d-flex gap-1 justify-content-end">' +
+                                '<button class="btn btn-icon btn-outline-primary btn-sm" onclick="viewUser(' + item.id + ')" title="View">' +
+                                    '<i class="ti ti-eye"></i>' +
                                 '</button>' +
-                                '<button class="btn btn-icon btn-light-primary btn-sm" onclick="openAssignRole(' + item.id + ')" title="Assign Role">' +
-                                    '<i class="ki-duotone ki-shield fs-3"><span class="path1"></span><span class="path2"></span></i>' +
+                                '<button class="btn btn-icon btn-outline-primary btn-sm" onclick="openAssignRole(' + item.id + ')" title="Assign Role">' +
+                                    '<i class="ti ti-shield-lock"></i>' +
                                 '</button>' +
-                                '<button class="btn btn-icon btn-light-' + (item.is_banned ? 'success' : 'danger') + ' btn-sm" onclick="openBanModal(' + item.id + ', ' + (item.is_banned ? 'true' : 'false') + ')" title="' + (item.is_banned ? 'Unban' : 'Ban') + '">' +
-                                    '<i class="ki-duotone ki-' + (item.is_banned ? 'shield-tick' : 'lock') + ' fs-3">' + (item.is_banned ? '<span class="path1"></span><span class="path2"></span>' : '<span class="path1"></span><span class="path2"></span><span class="path3"></span>') + '</i>' +
+                                '<button class="btn btn-icon btn-outline-' + (item.is_banned ? 'success' : 'danger') + ' btn-sm" onclick="openBanModal(' + item.id + ', ' + (item.is_banned ? 'true' : 'false') + ')" title="' + (item.is_banned ? 'Unban' : 'Ban') + '">' +
+                                    '<i class="ti ti-' + (item.is_banned ? 'shield-check' : 'lock') + '"></i>' +
                                 '</button>' +
                             '</div>'
                         ];
@@ -215,7 +208,7 @@ function initUsersTable() {
             },
             error: function(xhr) {
                 if (xhr.status === 401) {
-                    window.location.href = baseUrl + 'admin/login';
+                    window.location.href = baseUrl + 'login';
                 }
                 showError('Failed to load users');
             }
@@ -234,7 +227,7 @@ function initUsersTable() {
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         language: {
-            processing: '<div class="spinner-border spinner-border-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+            processing: '<div class="spinner-border text-primary" role="status"></div>',
             zeroRecords: 'No users found',
             info: 'Showing _START_ to _END_ of _TOTAL_ users',
             infoEmpty: 'Showing 0 to 0 of 0 users',
@@ -253,7 +246,7 @@ function loadRolesForSelect() {
                 var html = '<option value="">Select role...</option>';
                 response.data.roles.forEach(function(role) {
                     if (role.name !== 'super_admin') { // Don't allow assigning super_admin via UI
-                        html += '<option value="' + role.id + '">' + role.name + '</option>';
+                        html += '<option value="' + role.id + '">' + escapeHtml(role.name) + '</option>';
                     }
                 });
                 $('#assignRoleSelect').html(html);
@@ -264,7 +257,7 @@ function loadRolesForSelect() {
 
 function viewUser(id) {
     $.ajax({
-        url: baseUrl + 'admin/users/' + id,
+        url: baseUrl + 'users/' + id,
         method: 'GET',
         headers: getAuthHeaders(),
         success: function(html) {
@@ -283,12 +276,12 @@ function openAssignRole(userId) {
 function saveAssignRole() {
     var userId = $('#assignRoleUserId').val();
     var roleId = $('#assignRoleSelect').val();
-    
+
     if (!roleId) {
         showError('Please select a role');
         return;
     }
-    
+
     $.ajax({
         url: baseUrl + 'api/admin/users/' + userId + '/role',
         method: 'PUT',
@@ -298,14 +291,14 @@ function saveAssignRole() {
         success: function(response) {
             if (response.success) {
                 showSuccess('Role assigned successfully');
-                $('#assignRoleModal').modal('hide');
+                bootstrap.Modal.getInstance(document.getElementById('assignRoleModal')).hide();
                 usersTable.ajax.reload();
             } else {
                 showError(response.message || 'Failed to assign role');
             }
         },
         error: function(xhr) {
-            showError(xhr.responseJSON?.message || 'Failed to assign role');
+            showError((xhr.responseJSON && xhr.responseJSON.message) || 'Failed to assign role');
         }
     });
 }
@@ -325,10 +318,10 @@ function confirmBanUnban() {
     var userId = $('#banUserId').val();
     var action = $('#banAction').val();
     var reason = $('[name="reason"]').val();
-    
+
     var url = baseUrl + 'api/admin/users/' + userId + '/' + action;
     var data = action === 'ban' ? { reason: reason } : {};
-    
+
     $.ajax({
         url: url,
         method: 'POST',
@@ -338,37 +331,37 @@ function confirmBanUnban() {
         success: function(response) {
             if (response.success) {
                 showSuccess(action === 'ban' ? 'User banned successfully' : 'User unbanned successfully');
-                $('#banModal').modal('hide');
+                bootstrap.Modal.getInstance(document.getElementById('banModal')).hide();
                 usersTable.ajax.reload();
             } else {
                 showError(response.message || 'Failed to ' + action + ' user');
             }
         },
         error: function(xhr) {
-            showError(xhr.responseJSON?.message || 'Failed to ' + action + ' user');
+            showError((xhr.responseJSON && xhr.responseJSON.message) || 'Failed to ' + action + ' user');
         }
     });
 }
 
 function formatRoles(roles) {
     if (!roles || roles.length === 0) {
-        return '<span class="text-muted">No roles</span>';
+        return '<span class="text-secondary">No roles</span>';
     }
     return roles.map(function(role) {
-        var badgeClass = 'badge-light-secondary';
-        if (role === 'super_admin') badgeClass = 'badge-light-danger';
-        else if (role === 'admin') badgeClass = 'badge-light-primary';
-        else if (role === 'moderator') badgeClass = 'badge-light-warning';
-        else if (role === 'user') badgeClass = 'badge-light-success';
-        return '<span class="badge ' + badgeClass + ' me-1">' + role + '</span>';
+        var badgeClass = 'bg-azure-lt';
+        if (role === 'super_admin') badgeClass = 'bg-red-lt';
+        else if (role === 'admin') badgeClass = 'bg-blue-lt';
+        else if (role === 'moderator') badgeClass = 'bg-yellow-lt';
+        else if (role === 'user') badgeClass = 'bg-green-lt';
+        return '<span class="badge ' + badgeClass + ' me-1">' + escapeHtml(role) + '</span>';
     }).join(' ');
 }
 
 function formatStatus(isBanned) {
-    if (isBanned) {
-        return '<span class="badge badge-light-danger">Banned</span>';
+    if (isBanned == 1 || isBanned === true) {
+        return '<span class="badge bg-red-lt">Banned</span>';
     }
-    return '<span class="badge badge-light-success">Active</span>';
+    return '<span class="badge bg-green-lt">Active</span>';
 }
 
 function formatDate(dateStr) {
@@ -388,15 +381,15 @@ function debounce(func, wait) {
     };
 }
 
+function getAuthHeaders() {
+    var token = localStorage.getItem('admin_token');
+    return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-function getAuthHeaders() {
-    var token = localStorage.getItem('admin_token');
-    return token ? { 'Authorization': 'Bearer ' + token } : {};
 }
 
 function showSuccess(message) {

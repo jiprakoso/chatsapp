@@ -57,7 +57,7 @@ Backend (CI4):
 - Read status ganda: granular per-pesan (`message_reads`, upsert idempotent) + hemat untuk group besar (`conversation_members.last_read_message_id`, bulk mark-read tanpa membengkakkan tabel).
 - Attachment: upload multipart (`POST /api/conversations/{id}/attachments`, maks 20 MB app-level, mime whitelist), file disimpan di `writable/uploads/` di luar `public/`, diakses via `GET /api/attachments/{id}` ber-otorisasi.
 - Device/FCM: `POST /api/devices`, `DELETE /api/devices/{id}`, endpoint internal service-to-service (`X-Internal-Key`) untuk ambil/nonaktifkan token.
-- Web Admin session-based (`/admin/*`): login, dashboard statistik, kelola users/roles/permissions/conversations, settings sistem.
+- Web Admin session-based (langsung di root: `/login`, `/`, `/users`, `/roles`, `/permissions`, `/conversations`, `/settings`): login, dashboard statistik, kelola users/roles/permissions/conversations, settings sistem.
 
 Realtime (Node):
 
@@ -127,7 +127,7 @@ docker compose exec php php spark db:seed RolePermissionSeeder
 
 - API: `http://localhost:8090/api` (via nginx → `public/`)
 - Socket.IO: `http://localhost:4000` (`GET /health` untuk cek)
-- Web Admin: `http://localhost:8090/admin/login`
+- Web Admin: `http://localhost:8090/login` (root `/` = dashboard, tanpa prefix `/admin`)
 
 Tanpa Docker (dev lokal):
 

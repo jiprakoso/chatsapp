@@ -3,7 +3,7 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
-$routes->get('/', 'Home::index');
+// Catatan: '/' dipakai Web Admin Dashboard (lihat grup webadminauth di bawah).
 
 $routes->group('api/auth', static function ($routes) {
     $routes->post('register', 'Api\AuthController::register');
@@ -11,9 +11,9 @@ $routes->group('api/auth', static function ($routes) {
 });
 
 // Web Admin Auth Routes (no JWT filter for login page)
-$routes->get('admin/login', 'WebAdmin\AuthController::login');
-$routes->post('admin/login', 'WebAdmin\AuthController::loginPost');
-$routes->get('admin/logout', 'WebAdmin\AuthController::logout');
+$routes->get('login', 'WebAdmin\AuthController::login');
+$routes->post('login', 'WebAdmin\AuthController::loginPost');
+$routes->get('logout', 'WebAdmin\AuthController::logout');
 
 $routes->group('api', ['filter' => 'jwtauth'], static function ($routes) {
     $routes->post('devices', 'Api\DeviceController::register');
@@ -68,8 +68,8 @@ $routes->group('api/internal', ['filter' => 'internalauth'], static function ($r
     $routes->post('devices/deactivate', 'Api\Internal\DeviceController::deactivate');
 });
 
-// Web Admin Routes
-$routes->group('admin', ['filter' => 'webadminauth'], static function ($routes) {
+// Web Admin Routes (langsung di root, tanpa prefix admin)
+$routes->group('', ['filter' => 'webadminauth'], static function ($routes) {
     $routes->get('/', 'WebAdmin\DashboardController::index');
     $routes->get('dashboard', 'WebAdmin\DashboardController::index');
     $routes->get('users', 'WebAdmin\UsersController::index');

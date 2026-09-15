@@ -11,13 +11,13 @@ class WebAdminAuthFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         // Skip for login page
-        if (strpos($request->getPath(), 'admin/login') === 0) {
+        if ($request->getPath() === 'login') {
             return null;
         }
-        
+
         // Check session
         if (!session()->get('admin_logged_in')) {
-            return redirect()->to(base_url('admin/login'));
+            return redirect()->to(base_url('login'));
         }
         
         return null;

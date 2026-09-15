@@ -14,7 +14,7 @@ class AuthController extends BaseController
     {
         // If already logged in, redirect to dashboard
         if (session()->get('admin_logged_in')) {
-            return redirect()->to(base_url('admin'));
+            return redirect()->to(base_url('/'));
         }
         
         return view('webadmin/auth/login');
@@ -108,7 +108,7 @@ class AuthController extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'token' => $token,
-            'redirect' => base_url('admin')
+            'redirect' => base_url('/')
         ]);
     }
     
@@ -116,6 +116,6 @@ class AuthController extends BaseController
     {
         session()->destroy();
         $this->response->deleteCookie('admin_token');
-        return redirect()->to(base_url('admin/login'));
+        return redirect()->to(base_url('login'));
     }
 }

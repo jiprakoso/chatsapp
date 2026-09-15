@@ -1,146 +1,117 @@
 <?= $this->extend('webadmin/layout') ?>
 
 <?= $this->section('content') ?>
-<div class="d-flex flex-column flex-lg-row">
-    <div class="flex-lg-row-fluid">
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-stack mb-10">
-                <div>
-                    <h1 class="text-gray-900 fw-bolder fs-2hx">Dashboard</h1>
-                    <div class="fw-semibold fs-6 text-muted mt-2">Welcome back! Here's an overview of your application.</div>
-                </div>
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">Dashboard</h2>
+                <div class="text-secondary mt-1">Welcome back! Here's an overview of your application.</div>
             </div>
-            
-            <!-- Stats Cards -->
-            <div class="row g-5 g-xl-10 mb-10">
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-flush h-100">
-                        <div class="card-body py-5">
-                            <div class="d-flex flex-stack">
-                                <div>
-                                    <span class="card-label fw-bold text-muted">Total Users</span>
-                                    <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statUsers">-</h2>
-                                </div>
-                                <div class="symbol symbol-60px symbol-circle symbol-light-primary">
-                                    <i class="ki-duotone ki-people fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
-                                </div>
-                            </div>
+        </div>
+    </div>
+</div>
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Stats Cards -->
+        <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Total Users</div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-flush h-100">
-                        <div class="card-body py-5">
-                            <div class="d-flex flex-stack">
-                                <div>
-                                    <span class="card-label fw-bold text-muted">Active Conversations</span>
-                                    <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statConversations">-</h2>
-                                </div>
-                                <div class="symbol symbol-60px symbol-circle symbol-light-success">
-                                    <i class="ki-duotone ki-messages fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-flush h-100">
-                        <div class="card-body py-5">
-                            <div class="d-flex flex-stack">
-                                <div>
-                                    <span class="card-label fw-bold text-muted">Total Messages</span>
-                                    <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statMessages">-</h2>
-                                </div>
-                                <div class="symbol symbol-60px symbol-circle symbol-light-warning">
-                                    <i class="ki-duotone ki-message-text-2 fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-flush h-100">
-                        <div class="card-body py-5">
-                            <div class="d-flex flex-stack">
-                                <div>
-                                    <span class="card-label fw-bold text-muted">Registered Devices</span>
-                                    <h2 class="card-title fw-bolder text-gray-900 fs-1 mt-3" id="statDevices">-</h2>
-                                </div>
-                                <div class="symbol symbol-60px symbol-circle symbol-light-danger">
-                                    <i class="ki-duotone ki-devices fs-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="avatar bg-blue-lt me-3"><i class="ti ti-users"></i></span>
+                            <span class="h1 mb-0" id="statUsers">-</span>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Charts / Recent Activity -->
-            <div class="row g-5 g-xl-10">
-                <div class="col-xl-8">
-                    <div class="card card-flush h-100">
-                        <div class="card-header border-0 pt-5">
-                            <div class="card-title">
-                                <h3 class="fw-bolder text-gray-900 fs-3">Recent Activity</h3>
-                            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Active Conversations</div>
                         </div>
-                        <div class="card-body pt-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-row-gray-100 align-middle gs-0 gy-4" id="tableRecentActivity">
-                                    <thead>
-                                        <tr class="text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                                            <th class="min-w-125px">Time</th>
-                                            <th>Event</th>
-                                            <th class="min-w-150px">User</th>
-                                            <th class="text-end min-w-100px">Details</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recentActivityBody">
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="avatar bg-green-lt me-3"><i class="ti ti-messages"></i></span>
+                            <span class="h1 mb-0" id="statConversations">-</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="col-xl-4">
-                    <div class="card card-flush h-100">
-                        <div class="card-header border-0 pt-5">
-                            <div class="card-title">
-                                <h3 class="fw-bolder text-gray-900 fs-3">System Status</h3>
-                            </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Total Messages</div>
                         </div>
-                        <div class="card-body pt-0">
-                            <div class="d-flex flex-column">
-                                <div class="d-flex flex-stack mb-5 pb-5 border-bottom border-gray-200">
-                                    <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-10px symbol-circle symbol-success me-3"></div>
-                                        <div class="fw-semibold">API Server</div>
-                                    </div>
-                                    <span class="badge badge-light-success fw-bold">Online</span>
-                                </div>
-                                <div class="d-flex flex-stack mb-5 pb-5 border-bottom border-gray-200">
-                                    <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-10px symbol-circle symbol-success me-3"></div>
-                                        <div class="fw-semibold">Socket Server</div>
-                                    </div>
-                                    <span class="badge badge-light-success fw-bold">Online</span>
-                                </div>
-                                <div class="d-flex flex-stack mb-5 pb-5 border-bottom border-gray-200">
-                                    <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-10px symbol-circle symbol-success me-3"></div>
-                                        <div class="fw-semibold">Database</div>
-                                    </div>
-                                    <span class="badge badge-light-success fw-bold">Connected</span>
-                                </div>
-                                <div class="d-flex flex-stack mb-5">
-                                    <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-10px symbol-circle symbol-warning me-3"></div>
-                                        <div class="fw-semibold">FCM</div>
-                                    </div>
-                                    <span class="badge badge-light-warning fw-bold">Configured</span>
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="avatar bg-yellow-lt me-3"><i class="ti ti-message"></i></span>
+                            <span class="h1 mb-0" id="statMessages">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Registered Devices</div>
+                        </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="avatar bg-red-lt me-3"><i class="ti ti-devices"></i></span>
+                            <span class="h1 mb-0" id="statDevices">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-deck row-cards">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Activity</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table" id="tableRecentActivity">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Event</th>
+                                    <th>User</th>
+                                    <th class="text-end">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentActivityBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">System Status</h3>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><span class="status-dot status-green me-2"></span>API Server</span>
+                            <span class="badge bg-green-lt">Online</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><span class="status-dot status-green me-2"></span>Socket Server</span>
+                            <span class="badge bg-green-lt">Online</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><span class="status-dot status-green me-2"></span>Database</span>
+                            <span class="badge bg-green-lt">Connected</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><span class="status-dot status-yellow me-2"></span>FCM</span>
+                            <span class="badge bg-yellow-lt">Configured</span>
                         </div>
                     </div>
                 </div>
@@ -155,7 +126,7 @@
 $(document).ready(function() {
     loadDashboardStats();
     loadRecentActivity();
-    
+
     // Refresh every 30 seconds
     setInterval(function() {
         loadDashboardStats();
@@ -193,10 +164,10 @@ function loadRecentActivity() {
                 response.data.forEach(function(item) {
                     var badgeClass = getBadgeClass(item.type);
                     html += '<tr>' +
-                        '<td class="text-muted fw-semibold">' + item.time + '</td>' +
-                        '<td><span class="badge ' + badgeClass + '">' + item.event + '</span></td>' +
-                        '<td>' + item.user + '</td>' +
-                        '<td class="text-end text-muted">' + item.details + '</td>' +
+                        '<td class="text-secondary">' + escapeHtml(item.time) + '</td>' +
+                        '<td><span class="badge ' + badgeClass + '">' + escapeHtml(item.event) + '</span></td>' +
+                        '<td>' + escapeHtml(item.user) + '</td>' +
+                        '<td class="text-end text-secondary">' + escapeHtml(item.details) + '</td>' +
                     '</tr>';
                 });
                 $('#recentActivityBody').html(html);
@@ -207,11 +178,11 @@ function loadRecentActivity() {
 
 function getBadgeClass(type) {
     switch(type) {
-        case 'user': return 'badge-light-primary';
-        case 'conversation': return 'badge-light-success';
-        case 'message': return 'badge-light-warning';
-        case 'ban': return 'badge-light-danger';
-        default: return 'badge-light-secondary';
+        case 'user': return 'bg-blue-lt';
+        case 'conversation': return 'bg-green-lt';
+        case 'message': return 'bg-yellow-lt';
+        case 'ban': return 'bg-red-lt';
+        default: return 'bg-azure-lt';
     }
 }
 
@@ -224,6 +195,12 @@ function formatNumber(num) {
 function getAuthHeaders() {
     var token = localStorage.getItem('admin_token');
     return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 </script>
 <?= $this->endSection() ?>

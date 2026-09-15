@@ -15,7 +15,7 @@
         var currentPath = window.location.pathname;
 
         // Halaman login tidak perlu token
-        if (currentPath.startsWith('/admin/login')) {
+        if (currentPath === '/login') {
             return;
         }
         
@@ -57,14 +57,17 @@
     }
     
     function redirectToLogin() {
-        if (!window.location.pathname.startsWith('/admin/login')) {
-            window.location.href = baseUrl + 'admin/login';
+        if (window.location.pathname !== '/login') {
+            window.location.href = baseUrl + 'login';
         }
     }
     
     function updateUserUI(user) {
-        // Update header user info if elements exist
-        $('#kt_header_user_menu_toggle').attr('title', user.name + ' (' + user.email + ')');
+        // Update header user info if elements exist (Tabler layout)
+        var nameEl = $('#headerUserName');
+        if (nameEl.length) nameEl.text(user.name || 'Admin');
+        var avatarEl = $('#headerUserAvatar');
+        if (avatarEl.length && user.name) avatarEl.text(user.name.charAt(0).toUpperCase());
     }
     
     function initCommonHandlers() {
@@ -97,7 +100,7 @@
     function logout() {
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
-        window.location.href = baseUrl + 'admin/login';
+        window.location.href = baseUrl + 'login';
     }
     
     // Expose globally
