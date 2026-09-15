@@ -7,6 +7,8 @@
 .AppleDouble
 .LSOverride
 
+
+
 # OS X Thumbnails
 ._*
 
@@ -125,3 +127,6 @@ _modules/*
 
 /results/
 /phpunit.xml
+
+.codegraph
+.remember
