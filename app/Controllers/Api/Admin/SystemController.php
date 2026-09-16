@@ -13,25 +13,26 @@ class SystemController extends AdminBaseController
         try {
             $cache = Services::cache();
             $cache->clean();
-            
-            // Also clear file cache
+
+            // Juga bersihkan file cache bila handler saat ini bukan file
+            // (Valkey/redis) — ada fallback yang file-nya juga bisa numpuk.
             $cachePath = WRITEPATH . 'cache/';
             if (is_dir($cachePath)) {
                 $files = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($cachePath, \RecursiveDirectoryIterator::SKIP_DOTS),
                     \RecursiveIteratorIterator::CHILD_FIRST
                 );
-                
+
                 foreach ($files as $file) {
-                    if ($file->isFile()) {
+                    if ($file->isFile() && ! str_starts_with($file->getFilename(), '.')) {
                         @unlink($file->getPathname());
                     } elseif ($file->isDir()) {
                         @rmdir($file->getPathname());
                     }
                 }
             }
-            
-            return $this->success(['cleared' => true], 'Cache cleared successfully');
+
+            return $this->success(['cleared' => true]);
         } catch (\Exception $e) {
             return $this->error('Failed to clear cache: ' . $e->getMessage(), 500);
         }

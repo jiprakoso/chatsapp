@@ -36,8 +36,10 @@ $routes->group('api/admin', ['filter' => 'jwtauth'], static function ($routes) {
     $routes->delete('permissions/(:num)', 'Api\Admin\PermissionController::delete/$1', ['filter' => 'permission:permissions.manage']);
 
     $routes->get('users', 'Api\Admin\UserController::index', ['filter' => 'permission:users.view']);
+    $routes->post('users', 'Api\Admin\UserController::store', ['filter' => 'permission:users.manage']);
     $routes->get('users/(:num)', 'Api\Admin\UserController::show/$1', ['filter' => 'permission:users.view']);
-    $routes->get('users/me', 'Api\Admin\UserController::me', ['filter' => 'permission:users.view']);
+    $routes->get('users/me', 'Api\Admin\UserController::me');
+    $routes->put('users/(:num)', 'Api\Admin\UserController::update/$1', ['filter' => 'permission:users.manage']);
     $routes->put('users/(:num)/role', 'Api\Admin\UserController::assignRole/$1', ['filter' => 'permission:roles.manage']);
     $routes->post('users/(:num)/ban', 'Api\Admin\UserController::ban/$1', ['filter' => 'permission:users.ban']);
     $routes->post('users/(:num)/unban', 'Api\Admin\UserController::unban/$1', ['filter' => 'permission:users.ban']);

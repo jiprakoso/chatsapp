@@ -183,8 +183,8 @@ function clearCache() {
                 showError(response.message || 'Failed to clear cache');
             }
         },
-        error: function() {
-            showError('Cache clear endpoint not implemented');
+        error: function(xhr) {
+            showError((xhr.responseJSON && xhr.responseJSON.message) || ('Failed to clear cache (' + (xhr.status || 'error') + ')'));
         }
     });
 }

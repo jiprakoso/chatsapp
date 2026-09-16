@@ -26,6 +26,20 @@
         var csrfName = '<?= csrf_token() ?>';
     </script>
 </head>
+<?php
+// Hitung hak akses untuk menyembunyikan menu yang tidak boleh diakses.
+// API sudah menjaga by level & permission, menu disembunyikan agar UX konsisten.
+$__uid = (int) session()->get('admin_user_id');
+$__auth = $__uid ? new \App\Services\AuthorizationService() : null;
+$__can = static fn(string $perm): bool => $__auth !== null && $__auth->userHasPermission($__uid, $perm);
+$__canUsers = $__can('users.view') || $__can('users.manage');
+$__canRoles = $__can('roles.manage');
+$__canPermissions = $__can('permissions.manage');
+$__canAccessControl = $__canRoles || $__canPermissions;
+$__canConversations = $__can('conversations.view_all') || $__can('conversations.manage');
+$__canChat = $__canConversations; // Live chat butuh akses conversation
+$__canSettings = $__can('system.settings');
+?>
 <body>
 <div class="page">
     <!-- Sidebar -->
@@ -47,34 +61,43 @@
                             <span class="nav-link-title">Dashboard</span>
                         </a>
                     </li>
+                    <?php if ($__canUsers): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('users') ?>">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-users"></i></span>
                             <span class="nav-link-title">Users</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($__canAccessControl): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#sidebar-access" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-shield-lock"></i></span>
                             <span class="nav-link-title">Access Control</span>
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item" href="<?= base_url('roles') ?>">Roles</a>
-                            <a class="dropdown-item" href="<?= base_url('permissions') ?>">Permissions</a>
+                            <?php if ($__canRoles): ?><a class="dropdown-item" href="<?= base_url('roles') ?>">Roles</a><?php endif; ?>
+                            <?php if ($__canPermissions): ?><a class="dropdown-item" href="<?= base_url('permissions') ?>">Permissions</a><?php endif; ?>
                         </div>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($__canConversations): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('conversations') ?>">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-messages"></i></span>
                             <span class="nav-link-title">Conversations</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($__canChat): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('chat') ?>">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-message-chatbot"></i></span>
                             <span class="nav-link-title">Live Chat</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($__canSettings): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#sidebar-system" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>
@@ -84,6 +107,7 @@
                             <a class="dropdown-item" href="<?= base_url('settings') ?>">Settings</a>
                         </div>
                     </li>
+                    <?php endif; ?>
                 </ul>
             </div>
         </div>
@@ -105,10 +129,12 @@
                         </div>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                        <?php if ($__canSettings): ?>
                         <a href="<?= base_url('settings') ?>" class="dropdown-item">
                             <i class="ti ti-settings me-2"></i>Settings
                         </a>
                         <div class="dropdown-divider"></div>
+                        <?php endif; ?>
                         <a href="#" class="dropdown-item text-danger" id="btnLogout">
                             <i class="ti ti-logout me-2"></i>Logout
                         </a>
