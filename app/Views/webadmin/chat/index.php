@@ -156,6 +156,18 @@ var renderedIds = new Set();
 var socket = null;
 var typingTimer = null;
 
+function hasPermission(perm) {
+    var u = window.AdminApp.getUser && window.AdminApp.getUser();
+    if (!u || !Array.isArray(u.permissions)) return false;
+    if (u.permissions.includes('*') || u.permissions.includes(perm)) return true;
+    var prefix = perm.split('.')[0] + '.*';
+    if (u.permissions.includes(prefix)) return true;
+    return false;
+}
+function canViewAllConversations() {
+    return hasPermission('conversations.view_all') || hasPermission('conversations.manage');
+}
+
 $(document).ready(function() {
     window.AdminApp.ready.then(function() {
         loadConversationList();
@@ -189,7 +201,6 @@ function loadConversationList() {
     }
     function handlePublic(data) {
         if (Array.isArray(data.conversations)) {
-            // public shape -> map ke shape admin agar render sama
             var mapped = data.conversations.map(function(c) {
                 return {
                     id: c.id,
@@ -202,6 +213,23 @@ function loadConversationList() {
             renderConversationList(mapped);
         }
     }
+    function loadPublic() {
+        $.ajax({
+            url: baseUrl + 'api/conversations',
+            method: 'GET',
+            headers: getAuthHeaders(),
+            success: function(response) {
+                if (response.success && response.data) handlePublic(response.data);
+            },
+            error: function(xhr) {
+                if (xhr.status === 401) window.location.href = baseUrl + 'login';
+            }
+        });
+    }
+    // user/moderator hanya Live Chat — langsung pakai endpoint publik (membership)
+    // agar tidak menembak api/admin/conversations yang pasti 403
+    if (!canViewAllConversations()) { loadPublic(); return; }
+
     $.ajax({
         url: baseUrl + 'api/admin/conversations',
         method: 'GET',
@@ -215,17 +243,7 @@ function loadConversationList() {
         },
         error: function(xhr) {
             if (xhr.status === 401) { window.location.href = baseUrl + 'login'; return; }
-            if (xhr.status === 403) {
-                // user/moderator Live Chat only — fallback ke endpoint publik (membership)
-                $.ajax({
-                    url: baseUrl + 'api/conversations',
-                    method: 'GET',
-                    headers: getAuthHeaders(),
-                    success: function(response) {
-                        if (response.success && response.data) handlePublic(response.data);
-                    }
-                });
-            }
+            if (xhr.status === 403) loadPublic();
         }
     });
 }
@@ -270,17 +288,34 @@ function loadRoom(conversationId) {
         renderMemberChips(members);
         loadHistory(conversationId);
     }
+    function loadPublicRoom() {
+        $.ajax({
+            url: baseUrl + 'api/conversations/' + conversationId,
+            method: 'GET',
+            headers: getAuthHeaders(),
+            success: function(response) {
+                if (response.success && response.data) {
+                    var conv = response.data;
+                    var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
+                    handle(conv, members);
+                }
+            },
+            error: function(xhr2) {
+                if (xhr2.responseJSON && xhr2.responseJSON.message) showError(xhr2.responseJSON.message);
+            }
+        });
+    }
+    if (!canViewAllConversations()) { loadPublicRoom(); return; }
+
     $.ajax({
         url: baseUrl + 'api/admin/conversations/' + conversationId,
         method: 'GET',
         headers: getAuthHeaders(),
         success: function(response) {
             if (response.success && response.data) {
-                // admin shape: { conversation, members } ; public shape: conversation includes members[]
                 if (response.data.conversation && response.data.members) {
                     handle(response.data.conversation, response.data.members);
                 } else if (response.data.id) {
-                    // public /api/conversations/:id -> { id, name, type, members: [{id,name,...}] }
                     var conv = response.data;
                     var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
                     handle(conv, members);
@@ -288,25 +323,8 @@ function loadRoom(conversationId) {
             }
         },
         error: function(xhr) {
-            if (xhr.status === 403) {
-                $.ajax({
-                    url: baseUrl + 'api/conversations/' + conversationId,
-                    method: 'GET',
-                    headers: getAuthHeaders(),
-                    success: function(response) {
-                        if (response.success && response.data) {
-                            var conv = response.data;
-                            var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
-                            handle(conv, members);
-                        }
-                    },
-                    error: function(xhr2) {
-                        if (xhr2.responseJSON && xhr2.responseJSON.message) showError(xhr2.responseJSON.message);
-                    }
-                });
-            } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                showError(xhr.responseJSON.message);
-            }
+            if (xhr.status === 403) loadPublicRoom();
+            else if (xhr.responseJSON && xhr.responseJSON.message) showError(xhr.responseJSON.message);
         }
     });
 }
