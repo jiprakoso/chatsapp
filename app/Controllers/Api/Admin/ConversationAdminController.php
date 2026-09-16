@@ -92,6 +92,8 @@ class ConversationAdminController extends AdminBaseController
                 'member_count' => (int)$conv['member_count'],
                 'last_message_preview' => $lastMsg ? ($lastMsg['content'] ?? '') : null,
                 'last_message_at' => $conv['last_message_at'],
+                'last_message_id' => $conv['last_message_id'] ? (int) $conv['last_message_id'] : null,
+                'last_sender_id' => $conv['last_sender_id'] ? (int) $conv['last_sender_id'] : null,
                 'last_sender_name' => $conv['last_sender_name'],
             ];
         }

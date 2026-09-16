@@ -125,6 +125,23 @@ $__canDashboard = $__canUsers || $__canAccessControl || $__canConversations || $
             </h1>
             <div class="navbar-nav flex-row order-md-last">
                 <div class="nav-item dropdown">
+                    <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications" id="notifBell">
+                        <i class="ti ti-bell" style="font-size: 1.25rem;"></i>
+                        <span class="badge bg-red badge-notification badge-pill" id="notifBadge" style="display:none;">0</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h3 class="card-title mb-0">Notifications</h3>
+                                <a href="#" class="btn btn-sm btn-ghost-secondary" id="notifMarkRead">Mark all read</a>
+                            </div>
+                            <div class="list-group list-group-flush" id="notifList" style="max-height: 320px; overflow-y:auto;">
+                                <div class="p-3 text-secondary text-center small" id="notifEmpty">No new messages</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-item dropdown">
                     <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
                         <span class="avatar avatar-sm" id="headerUserAvatar">A</span>
                         <div class="d-none d-xl-block ps-2">
@@ -175,6 +192,8 @@ $__canDashboard = $__canUsers || $__canAccessControl || $__canConversations || $
 <script src="<?= base_url('assets/vendor/datatables/dataTables.bootstrap5.min.js') ?>"></script>
 <!-- Toastr -->
 <script src="<?= base_url('assets/vendor/toastr/toastr.min.js') ?>"></script>
+<!-- Socket.IO for realtime notifications (global) -->
+<script src="<?= base_url('assets/vendor/socketio/socket.io.min.js') ?>"></script>
 
 <!-- Page-specific JS -->
 <?= $this->renderSection('pageScripts') ?>
