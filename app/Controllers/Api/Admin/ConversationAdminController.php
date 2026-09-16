@@ -53,17 +53,41 @@ class ConversationAdminController extends AdminBaseController
             ->limit($perPage, $offset)
             ->findAll();
         
-        // Format data for DataTables
+        // Untuk private: admin ke atas yang bukan member -> "UserA - UserB",
+        // yang member -> lawan bicara. Group tetap pakai name.
+        $currentUserId = $this->currentUserId();
         $data = [];
         foreach ($conversations as $conv) {
             $lastMsg = null;
             if ($conv['last_message_id']) {
                 $lastMsg = $msgModel->find($conv['last_message_id']);
             }
-            
+
+            $displayName = $conv['name'];
+            if ($conv['type'] === 'private') {
+                $memberIds = $memberModel->activeMemberUserIds((int) $conv['id']);
+                if ($memberIds !== []) {
+                    $members = $userModel->select('id, name')->whereIn('id', $memberIds)->findAll();
+                    $map = array_column($members, 'name', 'id');
+                    $normIds = array_map('intval', $memberIds);
+                    $isMember = in_array((int) $currentUserId, $normIds, true);
+                    if ($isMember) {
+                        $otherIds = array_values(array_filter($memberIds, static fn($id) => (int) $id !== $currentUserId));
+                        $displayName = $otherIds !== [] ? ($map[$otherIds[0]] ?? '(Private)') : ($map[$currentUserId] ?? '(Private)');
+                    } else {
+                        // admin ke atas bukan member -> "UserA - UserB"
+                        $names = array_values($map);
+                        $displayName = $names !== [] ? implode(' - ', $names) : '(Private)';
+                    }
+                } else {
+                    $displayName = '(Private)';
+                }
+            }
+
             $data[] = [
                 'id' => (int)$conv['id'],
                 'name' => $conv['name'],
+                'display_name' => $displayName,
                 'type' => $conv['type'],
                 'member_count' => (int)$conv['member_count'],
                 'last_message_preview' => $lastMsg ? ($lastMsg['content'] ?? '') : null,

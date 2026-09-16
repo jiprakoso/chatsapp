@@ -29,6 +29,31 @@ class ConversationController extends ApiBaseController
             ->orderBy('created_at', 'DESC')
             ->paginate(20);
 
+        // Untuk private: tampilkan user tujuan (bukan "(Private)").
+        // Group tetap pakai name.
+        $memberModel = new ConversationMemberModel();
+        $userModel   = new UserModel();
+        foreach ($conversations as &$conv) {
+            $conv['display_name'] = $conv['name'];
+            if ($conv['type'] === 'private') {
+                $memberIds = $memberModel->activeMemberUserIds((int) $conv['id']);
+                if ($memberIds !== []) {
+                    $members = $userModel->select('id, name')->whereIn('id', $memberIds)->findAll();
+                    $map = array_column($members, 'name', 'id');
+                    // member -> tampilkan lawan bicara
+                    $otherIds = array_values(array_filter($memberIds, static fn($id) => (int) $id !== $userId));
+                    if ($otherIds !== []) {
+                        $conv['display_name'] = $map[$otherIds[0]] ?? $map[$otherIds[0]] ?? '(Private)';
+                    } else {
+                        // fallback: kalau hanya 1 member atau data anomali, tampilkan nama sendiri
+                        $conv['display_name'] = $map[$userId] ?? '(Private)';
+                    }
+                    $conv['private_members'] = $members;
+                }
+            }
+        }
+        unset($conv);
+
         return $this->success([
             'conversations' => $conversations,
             'pagination'    => $conversationModel->pager->getDetails(),

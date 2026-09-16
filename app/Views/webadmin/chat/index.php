@@ -218,6 +218,7 @@ function loadConversationList() {
                 return {
                     id: c.id,
                     name: c.name,
+                    display_name: c.display_name || c.name,
                     type: c.type,
                     last_message_preview: c.last_message_preview,
                     last_message_at: c.last_message_at
@@ -264,7 +265,8 @@ function loadConversationList() {
 function renderConversationList(items) {
     var html = '';
     items.forEach(function(item) {
-        var name = item.name || '(Private)';
+        // private: admin non-member -> "UserA - UserB", member -> lawan bicara, group -> name
+        var name = item.display_name || item.name || '(Private)';
         var preview = item.last_message_preview || 'No messages';
         html += '<a href="' + baseUrl + 'chat/' + item.id + '" class="list-group-item list-group-item-action conv-item' +
             (item.id == activeConversationId ? ' active' : '') + '" data-name="' + escapeHtml(name).toLowerCase() + '">' +
@@ -296,7 +298,24 @@ function loadRoom(conversationId) {
             if (m.user) userMap[m.user.id] = m.user.name;
             else if (m.name) userMap[m.id] = m.name;
         });
-        $('#roomTitle').text(conv.name || 'Conversation #' + conv.id);
+        // private: admin non-member (viewOnly) -> "UserA - UserB", member -> lawan bicara, group -> name
+        var title = conv.display_name || conv.name;
+        if (conv.type === 'private') {
+            if (isViewOnly) {
+                var names = members.map(function(m){ return m.user ? m.user.name : ''; }).filter(Boolean);
+                title = names.length ? names.join(' - ') : (conv.name || 'Private');
+            } else {
+                var other = null;
+                members.forEach(function(m){
+                    var uid = m.user ? m.user.id : m.user_id;
+                    if (parseInt(uid,10) !== adminUserId) other = m;
+                });
+                title = (other && other.user && other.user.name) ? other.user.name : (conv.name || 'Private');
+            }
+        } else {
+            title = conv.name || title || ('Conversation #' + conv.id);
+        }
+        $('#roomTitle').text(title);
         $('#roomSubtitle').text(members.length + ' members');
         renderMemberChips(members);
         if (preloadedMessages && Array.isArray(preloadedMessages) && isViewOnly) {
