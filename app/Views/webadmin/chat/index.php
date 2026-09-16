@@ -184,18 +184,48 @@ function socketBaseUrl() {
 // ---------- Conversation list ----------
 
 function loadConversationList() {
+    function handleAdmin(data) {
+        if (Array.isArray(data.data)) renderConversationList(data.data);
+    }
+    function handlePublic(data) {
+        if (Array.isArray(data.conversations)) {
+            // public shape -> map ke shape admin agar render sama
+            var mapped = data.conversations.map(function(c) {
+                return {
+                    id: c.id,
+                    name: c.name,
+                    type: c.type,
+                    last_message_preview: c.last_message_preview,
+                    last_message_at: c.last_message_at
+                };
+            });
+            renderConversationList(mapped);
+        }
+    }
     $.ajax({
         url: baseUrl + 'api/admin/conversations',
         method: 'GET',
         headers: getAuthHeaders(),
         data: { per_page: 200 },
         success: function(response) {
-            if (response.success && response.data && Array.isArray(response.data.data)) {
-                renderConversationList(response.data.data);
+            if (response.success && response.data) {
+                if (Array.isArray(response.data.data)) handleAdmin(response.data);
+                else if (Array.isArray(response.data.conversations)) handlePublic(response.data);
             }
         },
         error: function(xhr) {
-            if (xhr.status === 401) window.location.href = baseUrl + 'login';
+            if (xhr.status === 401) { window.location.href = baseUrl + 'login'; return; }
+            if (xhr.status === 403) {
+                // user/moderator Live Chat only — fallback ke endpoint publik (membership)
+                $.ajax({
+                    url: baseUrl + 'api/conversations',
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function(response) {
+                        if (response.success && response.data) handlePublic(response.data);
+                    }
+                });
+            }
         }
     });
 }
@@ -230,21 +260,52 @@ function filterConversationList(q) {
 // ---------- Room ----------
 
 function loadRoom(conversationId) {
+    function handle(conv, members) {
+        members.forEach(function(m) {
+            if (m.user) userMap[m.user.id] = m.user.name;
+            else if (m.name) userMap[m.id] = m.name;
+        });
+        $('#roomTitle').text(conv.name || 'Conversation #' + conv.id);
+        $('#roomSubtitle').text(members.length + ' members');
+        renderMemberChips(members);
+        loadHistory(conversationId);
+    }
     $.ajax({
         url: baseUrl + 'api/admin/conversations/' + conversationId,
         method: 'GET',
         headers: getAuthHeaders(),
         success: function(response) {
             if (response.success && response.data) {
-                var conv = response.data.conversation;
-                var members = response.data.members || [];
-                members.forEach(function(m) {
-                    if (m.user) userMap[m.user.id] = m.user.name;
+                // admin shape: { conversation, members } ; public shape: conversation includes members[]
+                if (response.data.conversation && response.data.members) {
+                    handle(response.data.conversation, response.data.members);
+                } else if (response.data.id) {
+                    // public /api/conversations/:id -> { id, name, type, members: [{id,name,...}] }
+                    var conv = response.data;
+                    var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
+                    handle(conv, members);
+                }
+            }
+        },
+        error: function(xhr) {
+            if (xhr.status === 403) {
+                $.ajax({
+                    url: baseUrl + 'api/conversations/' + conversationId,
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            var conv = response.data;
+                            var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
+                            handle(conv, members);
+                        }
+                    },
+                    error: function(xhr2) {
+                        if (xhr2.responseJSON && xhr2.responseJSON.message) showError(xhr2.responseJSON.message);
+                    }
                 });
-                $('#roomTitle').text(conv.name || 'Conversation #' + conv.id);
-                $('#roomSubtitle').text(members.length + ' members');
-                renderMemberChips(members);
-                loadHistory(conversationId);
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                showError(xhr.responseJSON.message);
             }
         }
     });
