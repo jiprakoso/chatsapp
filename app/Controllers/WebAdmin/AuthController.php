@@ -50,27 +50,18 @@ class AuthController extends BaseController
             ])->setStatusCode(403);
         }
         
-        // Check if user has admin role
+        // Izinkan semua role yang terdaftar untuk login web (user/moderator
+        // hanya akan melihat menu Live Chat — dijaga di layout.php).
+        // Tetap tolak user tanpa role yang tidak dikenali.
         $userRoleModel = new UserRoleModel();
-        $roleIds = $userRoleModel->roleIdsForUser((int)$user['id']);
-        
-        $roleModel = new RoleModel();
-        $isAdmin = false;
-        foreach ($roleIds as $roleId) {
-            $role = $roleModel->find($roleId);
-            if ($role && in_array($role['name'], ['super_admin', 'admin', 'moderator'])) {
-                $isAdmin = true;
-                break;
-            }
-        }
-        
-        if (!$isAdmin) {
+        $roleIds = $userRoleModel->roleIdsForUser((int) $user['id']);
+        if ($roleIds === []) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Access denied. Admin role required.'
+                'message' => 'Access denied. Role required.',
             ])->setStatusCode(403);
         }
-        
+
         // Generate JWT token (using the same library as API)
         $jwt = new \App\Libraries\Jwt();
         $secret = env('JWT_SECRET');
@@ -142,20 +133,10 @@ class AuthController extends BaseController
         }
 
         $roleIds = (new UserRoleModel())->roleIdsForUser($userId);
-        $roleModel = new RoleModel();
-        $isAdmin = false;
-        foreach ($roleIds as $roleId) {
-            $role = $roleModel->find($roleId);
-            if ($role && in_array($role['name'], ['super_admin', 'admin', 'moderator'], true)) {
-                $isAdmin = true;
-                break;
-            }
-        }
-
-        if (! $isAdmin) {
+        if ($roleIds === []) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Access denied. Admin role required.',
+                'message' => 'Access denied. Role required.',
             ])->setStatusCode(403);
         }
 
@@ -225,20 +206,10 @@ class AuthController extends BaseController
         }
 
         $roleIds = (new UserRoleModel())->roleIdsForUser((int) $user['id']);
-        $roleModel = new RoleModel();
-        $isAdmin = false;
-        foreach ($roleIds as $roleId) {
-            $role = $roleModel->find($roleId);
-            if ($role && in_array($role['name'], ['super_admin', 'admin', 'moderator'], true)) {
-                $isAdmin = true;
-                break;
-            }
-        }
-
-        if (! $isAdmin) {
+        if ($roleIds === []) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Access denied. Admin role required.',
+                'message' => 'Access denied. Role required.',
             ])->setStatusCode(403);
         }
 

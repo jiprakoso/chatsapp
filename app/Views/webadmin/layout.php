@@ -29,6 +29,7 @@
 <?php
 // Hitung hak akses untuk menyembunyikan menu yang tidak boleh diakses.
 // API sudah menjaga by level & permission, menu disembunyikan agar UX konsisten.
+// user & moderator: boleh login web tapi hanya Live Chat yang tampil.
 $__uid = (int) session()->get('admin_user_id');
 $__auth = $__uid ? new \App\Services\AuthorizationService() : null;
 $__can = static fn(string $perm): bool => $__auth !== null && $__auth->userHasPermission($__uid, $perm);
@@ -37,8 +38,9 @@ $__canRoles = $__can('roles.manage');
 $__canPermissions = $__can('permissions.manage');
 $__canAccessControl = $__canRoles || $__canPermissions;
 $__canConversations = $__can('conversations.view_all') || $__can('conversations.manage');
-$__canChat = $__canConversations; // Live chat butuh akses conversation
+$__canChat = (bool) $__uid; // Live Chat untuk semua user yang sudah login web (user/moderator hanya ini)
 $__canSettings = $__can('system.settings');
+$__canDashboard = $__canUsers || $__canAccessControl || $__canConversations || $__canSettings;
 ?>
 <body>
 <div class="page">
@@ -55,12 +57,14 @@ $__canSettings = $__can('system.settings');
             </h1>
             <div class="collapse navbar-collapse" id="sidebar-menu">
                 <ul class="navbar-nav pt-lg-3">
+                    <?php if ($__canDashboard): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('/') ?>">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-dashboard"></i></span>
                             <span class="nav-link-title">Dashboard</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                     <?php if ($__canUsers): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('users') ?>">

@@ -6,18 +6,31 @@ use App\Controllers\BaseController;
 
 class RolesController extends BaseController
 {
+    private function ensure(): ?\CodeIgniter\HTTP\RedirectResponse
+    {
+        $uid  = (int) session()->get('admin_user_id');
+        $auth = $uid ? new \App\Services\AuthorizationService() : null;
+        if ($auth === null || ! $auth->userHasPermission($uid, 'roles.manage')) {
+            return redirect()->to(base_url('chat'));
+        }
+        return null;
+    }
+
     public function index()
     {
+        if ($r = $this->ensure()) return $r;
         return view('webadmin/roles/index');
     }
     
     public function create()
     {
+        if ($r = $this->ensure()) return $r;
         return view('webadmin/roles/form');
     }
     
     public function edit($id = null)
     {
+        if ($r = $this->ensure()) return $r;
         $roleModel = new \App\Models\RoleModel();
         $role = $roleModel->find($id);
         
