@@ -70,8 +70,11 @@
                             <span class="text-secondary small" id="memberChips">Loading...</span>
                         </div>
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" id="roomFooter">
                         <div class="text-secondary small" id="typingIndicator"></div>
+                        <div id="viewOnlyAlert" class="alert alert-warning py-2 mb-2 d-none">
+                            <i class="ti ti-eye me-1"></i>View only — Anda bukan member conversation ini, tidak bisa mengirim pesan.
+                        </div>
                         <div class="input-group">
                             <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." autocomplete="off">
                             <button class="btn btn-primary" id="btnSend" type="button">
@@ -151,6 +154,7 @@
 <script>
 var activeConversationId = <?= $activeConversationId ? (int) $activeConversationId : 'null' ?>;
 var adminUserId = <?= (int) $adminUserId ?>;
+var isViewOnly = <?= !empty($isViewOnly) ? 'true' : 'false' ?>;
 var userMap = {};
 var renderedIds = new Set();
 var socket = null;
@@ -168,13 +172,22 @@ function canViewAllConversations() {
     return hasPermission('conversations.view_all') || hasPermission('conversations.manage');
 }
 
+function applyViewOnly() {
+    if (isViewOnly) {
+        $('#messageInput').prop('disabled', true).attr('placeholder', 'View only — bukan member');
+        $('#btnSend').prop('disabled', true);
+        $('#viewOnlyAlert').removeClass('d-none');
+        $('#roomSubtitle').append(' <span class="badge bg-yellow-lt ms-1">View only</span>');
+    }
+}
 $(document).ready(function() {
     window.AdminApp.ready.then(function() {
         loadConversationList();
         loadChatUsers();
         if (activeConversationId) {
+            applyViewOnly();
             loadRoom(activeConversationId);
-            connectSocket();
+            if (!isViewOnly) connectSocket();
         }
         $('#convSearch').on('keyup', debounce(function() {
             filterConversationList(this.value);
@@ -278,7 +291,7 @@ function filterConversationList(q) {
 // ---------- Room ----------
 
 function loadRoom(conversationId) {
-    function handle(conv, members) {
+    function handle(conv, members, preloadedMessages) {
         members.forEach(function(m) {
             if (m.user) userMap[m.user.id] = m.user.name;
             else if (m.name) userMap[m.id] = m.name;
@@ -286,7 +299,12 @@ function loadRoom(conversationId) {
         $('#roomTitle').text(conv.name || 'Conversation #' + conv.id);
         $('#roomSubtitle').text(members.length + ' members');
         renderMemberChips(members);
-        loadHistory(conversationId);
+        if (preloadedMessages && Array.isArray(preloadedMessages) && isViewOnly) {
+            preloadedMessages.forEach(appendMessage);
+            scrollBottom();
+        } else {
+            loadHistory(conversationId);
+        }
     }
     function loadPublicRoom() {
         $.ajax({
@@ -314,7 +332,7 @@ function loadRoom(conversationId) {
         success: function(response) {
             if (response.success && response.data) {
                 if (response.data.conversation && response.data.members) {
-                    handle(response.data.conversation, response.data.members);
+                    handle(response.data.conversation, response.data.members, response.data.messages);
                 } else if (response.data.id) {
                     var conv = response.data;
                     var members = (conv.members || []).map(function(u) { return { user: u, user_id: u.id }; });
@@ -460,6 +478,7 @@ function handleTyping() {
 }
 
 function sendMessage() {
+    if (isViewOnly) { showError('View only — bukan member, tidak bisa mengirim'); return; }
     var input = $('#messageInput');
     var text = (input.val() || '').trim();
     if (!text || !activeConversationId) return;
