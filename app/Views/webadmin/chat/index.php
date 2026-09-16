@@ -437,15 +437,35 @@ function sendViaRest(text) {
 var chatUsers = [];
 
 function loadChatUsers() {
+    // Direktori publik untuk semua role (user/moderator hanya Live Chat).
+    // Fallback ke api/admin/users bila ada instansi lama yang belum punya /api/users.
+    function handleUsers(users) {
+        chatUsers = (users || []).filter(function(u) {
+            return parseInt(u.id, 10) !== adminUserId;
+        });
+    }
     $.ajax({
-        url: baseUrl + 'api/admin/users',
+        url: baseUrl + 'api/users',
         method: 'GET',
         headers: getAuthHeaders(),
         data: { per_page: 500 },
         success: function(response) {
             if (response.success && response.data && Array.isArray(response.data.users)) {
-                chatUsers = response.data.users.filter(function(u) {
-                    return parseInt(u.id, 10) !== adminUserId;
+                handleUsers(response.data.users);
+            }
+        },
+        error: function(xhr) {
+            if (xhr.status === 404) {
+                $.ajax({
+                    url: baseUrl + 'api/admin/users',
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    data: { per_page: 500 },
+                    success: function(response) {
+                        if (response.success && response.data && Array.isArray(response.data.users)) {
+                            handleUsers(response.data.users);
+                        }
+                    }
                 });
             }
         }

@@ -46,6 +46,7 @@ $routes->group('api/admin', ['filter' => 'jwtauth'], static function ($routes) {
 });
 
 $routes->group('api', ['filter' => 'jwtauth'], static function ($routes) {
+    $routes->get('users', 'Api\UserDirectoryController::index');
     $routes->post('devices', 'Api\DeviceController::register');
     $routes->delete('devices/(:num)', 'Api\DeviceController::delete/$1');
 
